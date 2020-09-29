@@ -1,0 +1,65 @@
+Plan 2019/2020 :
+
+CM 1 :
+    0. Présentation de l'UE
+    1. Librairie pour les TP
+    2. Notions de topologie discrète
+        2.1 Espace de travail
+        2.2 Voisinages et connexité
+        2.3 Cas général
+        2.4 Définitions
+        2.5 Dualité des connexités
+        2.6 Points contour
+        2.7 Algorithme de numérot. des contours par balayage et fusion des labels
+
+CM 2 :
+    2. Notions de topologie discrète (suite)
+        2.8 Codes de Freeman
+            2.8.1 Introduction
+            2.8.2 Reconstruction d'un contour
+            2.8.3 Opérations
+            2.8.4 Périmètre et aire
+            2.8.5 Autres opérations
+        2.9 Suivi de contour
+
+CM 3 :
+    3. Approximation polygonale d'un contour
+        3.1 Distance à une droite
+        3.2 Algorithme récursif avec seuil
+    4. Droites et plans discrets
+        4.1 Algorithme de Bresenham
+        4.2 Droites de Reveillès
+        4.3 Reconnaissance de droite discrète
+
+CM 4 :
+    4. Droites et plans discrets (suite)
+        4.4 Intersections de droites
+    5. Transformations de distances
+        5.1 Distance discrète
+        5.2 Transformation de distance
+            5.2.1 Première approche par pelage
+            5.2.2 Détection de points caractéristiques : maximums locaux
+            5.2.3 Transformation de distance inverse par pelage : RDT
+
+CM 5 :
+    5. Transformations de distances (suite)
+        5.3 Calcul efficace : algos de Rosenfeld
+            5.3.1 Principe
+            5.3.2 DT de Rosenfeld
+            5.3.3 RDT de Rosenfeld
+            5.3.4 Généralisation avec des poids a,b
+    6. Distances pondérées
+        6.1 Distances de Montanari
+        6.2 Distances de chanfrein
+        6.3 Outils arithmétiques
+            6.3.1 Points visibles
+            6.3.2 Suites de Farey
+            6.3.3 Réseaux
+
+CM 6 :
+        6.3 Outils arithmétiques (suite)
+            6.3.4 Liens entre points visibles, suites de Farey et réseaux
+        6.4 Propriétés des distances de chanfrein
+        6.5 Axe médian
+    7. Transformation de distances Euclidienne
+
