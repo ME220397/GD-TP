@@ -1,0 +1,202 @@
+Géométrie Discrète - TP séance 1             CC BY-SA Edouard.Thiel@univ-amu.fr
+================================                                     07/09/2020
+
+Ce document est téléchargeable à l'adresse :
+    http://pageperso.lif.univ-mrs.fr/~edouard.thiel/ens/geodis/gd1-tp.txt
+Ou encore
+    http://j.mp/gd-et  puis  gd1-tp.txt
+
+À la fin de la séance, envoyer-moi vos fichiers par mail à
+    Edouard.Thiel@univ-amu.fr
+    Sujet : [GIG3] TP1
+    corps : noms prénoms du binôme
+    en attaché : les fichiers .cpp avec vos noms dans l'entête et la date
+
+
+1. Prise en main d'OpenCV
+   ======================
+
+Librairie OpenCV : en C++, logiciel libre, créée par Gary Bradski
+
+Librairie de "computer Vision" : plus de 500 fonctions
+    -> traiter images 2D, vidéos (fichiers, flux caméras), tracking, machine 
+       learning...
+    -> GUI intégré simpliste : HighGUI en 2D (on peut utiliser Qt, ...)
+    -> permet de manipuler images en dimension n (en mémoire uniquement)
+    -> wrappers en C, Python, Java
+
+Installer OpenCV pour Ubuntu sur votre ordinateur personnel :
+    $ sudo apt-get install libopencv-dev
+
+Documentation :
+    https://docs.opencv.org/master/d9/df8/tutorial_root.html
+    voir : - introduction to OpenCV / installation
+           - The core functionality / operations with images
+
+
+1.1 Programme d'exemple
+    -------------------
+
+Allez dans la page du cours http://j.mp/gd-et
+
+Téléchargez les fichiers suivants et placez-les dans le même répertoire :
+  - ex01-transfos.cpp
+  - gd-util.hpp et gd-util.cpp
+  - Makefile
+  - images.tgz (à décompresser)
+
+Compilez ensuite l'exemple ex01-transfos.cpp en tapant : 
+    make ex01-transfos      # pour compiler ce programme
+    make all                # pour compiler tous les programmes du répertoire
+    make clean all          # force la recompilation générale
+    make clean              # supprime les exécutables
+Puis exécutez le programme en lui passant une image en argument.
+
+Essayez ensuite les différentes touches du clavier (tapez 'a' pour l'aide),
+déplacer la loupe à la souris, changer la valeur du seuil et du zoom.
+
+Vous pouvez maintenant regarder le code source.
+
+Vous n'aurez pas besoin en principe de modifier l'ensemble du programme,
+mais juste de modifier quelques fonctions dans la section "transformations".
+
+
+1.2 Accès aux pixels
+    ----------------
+
+Si on charge une image avec cv::imread en lui passant IMREAD_COLOR,
+alors l'image est codée en interne au format CV_8UC3 : 3 canaux sur 8 bits,
+qui peuvent coder du RGB, HSV, etc.
+
+    - Accéder au pixel x,y du canal k:
+        img.at<cv::Vec3b>(y,x)[k]
+
+    - Accès linéaire
+        t = y*img.cols+x
+        img.at<cv::Vec3b>(t)[k]
+
+        for (t = 0; t < img.cols*img.rows; t++)
+            img.at<cv::Vec3b>(t)[k] = 0;
+
+Si on charge une image avec cv::imread en lui passant IMREAD_GRAYSCALE,
+alors l'image est codée en interne au format CV_8UC1 : 1 seul canal sur 8 bits.
+
+    - Accéder au pixel x,y :
+        img.at<uchar>(y,x)
+
+On peut créer une image pour stocker des labels sur 32 bits signés avec
+    img.create(rows, cols, CV_32SC1);
+puis accéder au pixel x,y par
+    img.at<int>(y,x)
+
+Autres types et accès aux pixels : voir annexe ci-dessous.
+On peut faire des conversions de format avec cv::Mat::convertTo().
+
+Plus d'informations : voir
+    https://docs.opencv.org/master/d5/d98/tutorial_mat_operations.html
+
+
+2. Exercices
+   =========
+
+Pensez à renommer le fichier (tp1-<vos-noms>.cpp) et à inscrire aussi vos noms 
+et la date de la version à la fin de l'entête.
+
+
+2.1 Marquage des contours
+    ---------------------
+
+La fonction transformer_bandes_horizontales reçoit une image img_niv où les
+pixels sont soit à 0 (pixels du fond) ou à 255 (pixels de la forme), puis
+remplace les pixels de la forme par une coordonnée pour afficher quelque chose.
+
+Elle est déclenchée avec la touche '1', à partir de l'image originale seuillée
+avec le slider.
+
+a) Renommer la fonction transformer_bandes_horizontales en marquer_contours_c8.
+Dans cette fonction, marquer les points de tous les contours à 1, en utilisant
+la 8-connexité pour la forme (et donc la 4-connexité pour le fond).
+
+Il suffit de balayer l'image, et de tester pour chaque pixel de la forme son
+4-voisinage.
+Faire attention à ne pas sortir de l'image en testant les voisins !
+(sinon, on peut considérer que les voisins en dehors de l'image sont à 0).
+
+À l'issue de cette opération, les pixels pourront prendre les 3 valeurs :
+    0 (noir) pixels du fond
+    1 (bleu) pixels du contour de la forme
+    255 (blanc) pixels de l'intérieur de la forme
+
+b) Même question en renommant la fonction transformer_bandes_verticales
+   (déclenchée avec la touche '2') en marquer_contours_c4, cette fois en
+   utilisant la 4-connexité pour la forme, et donc la 8-connexité pour le fond.
+
+   Cela revient à rajouter les voisins indirects dans votre test.
+
+
+2.2 Numérotation des contours par balayage et fusion des labels
+    -----------------------------------------------------------
+
+La fonction transformer_bandes_diagonales est lancée avec la touche '3'.
+Renommer la fonction en numéroter_contours_c8.
+
+Dans cette fonction on se propose de numéroter tous les points du premier
+contour à 1, tous les points du deuxième contour à 2, etc, en utilisant la
+8-connexité pour la forme, avec l'algorithme vu en cours :
+
+- un pixel p balaye l'image ligne à ligne :
+    si p est un point de contour (pour le 4 voisinage), 
+        si aucun 8-voisin de p dans la forme n'est déjà marqué,
+            on le marque avec un nouveau label (le premier label étant 1).
+        sinon si un seul 8-voisin de p dans la forme est déjà marqué,
+            on recopie son label
+        sinon, on recopie l'un des labels du 8-voisinage, et on mémorise les
+        autres labels dans une table d'équivalence pour le label recopié.
+
+- pour chaque groupe d'équivalence on associe ensuite un label final en
+  commençant à 1.
+
+- étape de fusion : on re-balaye l'image ligne à ligne, et on remplace pour
+  chaque pixel du contour son label par son label final.
+
+Remarque : dans la première étape, le nouveau label risque rapidement
+d'atteindre 255 qui est la valeur associée à la forme. Pour éviter tout
+problème, passer de 254 à 256 ! De même pour le label final.
+
+
+Annexe : List of Mat type in OpenCV
+===================================
+
+Mapping of Type to Numbers in OpenCV :
+             C1    C2    C3    C4
+    CV_8U     0     8    16    24
+    CV_16U    2    10    18    26
+    CV_16S    3    11    19    27
+    CV_32S    4    12    20    28
+    CV_32F    5    13    21    29
+    CV_64F    6    14    22    30
+
+Unsigned 8bits uchar 0..255
+    Mat:    CV_8UC1    CV_8UC2    CV_8UC3    CV_8UC4
+    Pixel:  uchar      cv::Vec2b  cv::Vec3b  cv::Vec4b
+
+Unsigned 16bits ushort 0..65535
+    Mat:    CV_16UC1   CV_16UC2   CV_16UC3   CV_16UC4
+    Pixel:  ushort     cv::Vec2w  cv::Vec3w  cv::Vec4w
+
+Signed 16bits short -32768..32767
+    Mat:    CV_16SC1   CV_16SC2   CV_16SC3   CV_16SC4
+    Pixel:  short      cv::Vec2s  cv::Vec3s  cv::Vec4s
+
+Signed 32bits int -2147483648..2147483647
+    Mat:    CV_32SC1   CV_32SC2   CV_32SC3   CV_32SC4
+    Pixel:  int        cv::Vec2i  cv::Vec3i  cv::Vec4i
+
+Float 32bits float -1.18*10-38..3.40*10-38 
+    Mat:    CV_32FC1   CV_32FC2   CV_32FC3   CV_32FC4
+    Pixel:  float      cv::Vec2f  cv::Vec3f  cv::Vec4f
+
+Double 64bits double 
+    Mat:    CV_64FC1   CV_64FC2   CV_64FC3   CV_64FC4
+    Pixel:  double     cv::Vec2d  cv::Vec3d  cv::Vec4d
+
