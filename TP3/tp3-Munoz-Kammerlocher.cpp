@@ -30,6 +30,11 @@ typedef struct{
     int* chaine_free;
 } ContourF8;
 
+typedef struct{
+    int y, x;
+    int flag;
+}ContourPol;
+
 //----------------------------------- M Y -------------------------------------
 
 class My {
@@ -411,7 +416,7 @@ int get_dir_oppose(int d){
     return (d+4)%8;
 }
 
-void suivre_un_contour_c8(cv::Mat img_niv, int yA, int xA, int ny8[], int nx8[], int dirA, int num_contour)
+void suivre_un_contour_c8(cv::Mat img_niv, int yA, int xA, int ny8[], int nx8[], int dirA, int num_contour, ContourF8 contour_F8)
 {
     int d=0;
     int Q[2];
@@ -446,6 +451,7 @@ void suivre_un_contour_c8(cv::Mat img_niv, int yA, int xA, int ny8[], int nx8[],
                 dir=d;
                 est_isole = false;
                 printf("%d, ", d);
+                contour_F8.chaine_free[contour_F8.taille ++]=dir;
                 break;
             }
             
@@ -466,6 +472,8 @@ void effectuer_suivi_contours_c8(cv::Mat img_niv)//Permet d'editer le contour de
     int num_contour =1; //initialisation de la couleur du contour
     int nx8[8] = {1, 1, 0, -1, -1, -1, 0, 1};
     int ny8[8] = {0, 1, 1, 1, 0, -1, -1, -1};
+    ContourF8 contour_F8;
+    contour_F8.chaine_free = (int*) malloc(img_niv.rows * img_niv.cols *  sizeof(int))
     for (int y = 0; y < img_niv.rows; y++)
     for (int x = 0; x < img_niv.cols; x++)
     {
@@ -492,8 +500,11 @@ void effectuer_suivi_contours_c8(cv::Mat img_niv)//Permet d'editer le contour de
             
             if(dir >= 0) //trouve un contour
             {
+                contour_F8.p_y=y;
+                contour_F8.p_x = x;
+                contour_F8.taille = 0;
                 printf("Contour %d : s = { ", num_contour);
-                suivre_un_contour_c8(img_niv, y, x, ny8, nx8, dir, num_contour++);
+                suivre_un_contour_c8(img_niv, y, x, ny8, nx8, dir, num_contour++,contour_F8);
                 printf("}\n");
                 //printf("contour");
                 //break;
@@ -533,6 +544,16 @@ void effectuer_transformations (My::Affi affi, cv::Mat img_niv)
         default : ;
     }
 }
+
+
+
+
+//----------------------------------------------TP3-----------------------------------------------------
+
+
+
+
+
 
 
 //---------------------------- C A L L B A C K S ------------------------------
