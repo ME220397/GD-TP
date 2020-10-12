@@ -416,7 +416,7 @@ int get_dir_oppose(int d){
     return (d+4)%8;
 }
 
-void suivre_un_contour_c8(cv::Mat img_niv, int yA, int xA, int ny8[], int nx8[], int dirA, int num_contour, ContourF8 contour_F8)
+void suivre_un_contour_c8(cv::Mat img_niv, int yA, int xA, int ny8[], int nx8[], int dirA, int num_contour, ContourF8 *contour_F8)
 {
     int d=0;
     int Q[2];
@@ -450,8 +450,7 @@ void suivre_un_contour_c8(cv::Mat img_niv, int yA, int xA, int ny8[], int nx8[],
                 x=Q[1];
                 dir=d;
                 est_isole = false;
-                printf("%d, ", d);
-                contour_F8.chaine_free[contour_F8.taille ++]=dir;
+                contour_F8->chaine_free[contour_F8->taille++]=dir;
                 break;
             }
             
@@ -464,16 +463,17 @@ void suivre_un_contour_c8(cv::Mat img_niv, int yA, int xA, int ny8[], int nx8[],
     }
     while(!(x == xA && y == yA && dir == dir_finale));
     printf("%d", dir);
+    contour_F8->chaine_free[contour_F8->taille++]=dir;
     
 }
 
-void effectuer_suivi_contours_c8(cv::Mat img_niv)//Permet d'editer le contour de l'image
+ContourF8 * effectuer_suivi_contours_c8(cv::Mat img_niv)//Permet d'editer le contour de l'image
 {
     int num_contour =1; //initialisation de la couleur du contour
     int nx8[8] = {1, 1, 0, -1, -1, -1, 0, 1};
     int ny8[8] = {0, 1, 1, 1, 0, -1, -1, -1};
-    ContourF8 contour_F8;
-    contour_F8.chaine_free = (int*) malloc(img_niv.rows * img_niv.cols *  sizeof(int))
+    ContourF8 * contours_F8 = (ContourF8 *) malloc(img_niv.rows*img_niv.cols*sizeof(ContourF8));
+    int taille_F8 = 0;
     for (int y = 0; y < img_niv.rows; y++)
     for (int x = 0; x < img_niv.cols; x++)
     {
@@ -500,12 +500,12 @@ void effectuer_suivi_contours_c8(cv::Mat img_niv)//Permet d'editer le contour de
             
             if(dir >= 0) //trouve un contour
             {
-                contour_F8.p_y=y;
-                contour_F8.p_x = x;
-                contour_F8.taille = 0;
-                printf("Contour %d : s = { ", num_contour);
-                suivre_un_contour_c8(img_niv, y, x, ny8, nx8, dir, num_contour++,contour_F8);
-                printf("}\n");
+                contours_F8[taille_F8].p_y=y;
+                contours_F8[taille_F8].p_x = x;
+                contours_F8[taille_F8].taille = 0;
+                contours_F8[taille_F8].chaine_free = (int *) malloc(img_niv.rows*img_niv.cols*sizeof(int));
+                suivre_un_contour_c8(img_niv, y, x, ny8, nx8, dir, num_contour++,&contours_F8[taille_F8]);
+                taille_F8++;
                 //printf("contour");
                 //break;
                 if(num_contour == 255)
@@ -514,11 +514,19 @@ void effectuer_suivi_contours_c8(cv::Mat img_niv)//Permet d'editer le contour de
                 }
             }
         }
-        
     }
+    for(int i=0; i<taille_F8; i++){
+        printf("Contour %d : p_x = %d, p_y = %d\n", i, contours_F8[i].p_x, contours_F8[i].p_y);
 
+        printf("s = {");
+        for(int j=0; j<contours_F8[i].taille-1; j++)
+         printf("%d, ", contours_F8[i].chaine_free[j]);
+        printf("%d", contours_F8[i].chaine_free[contours_F8[i].taille-1]);
+        printf("}\n");
+    }
+    return contours_F8;
 
-}
+}// Fin effectuer_suivi_contours_c8
 
 
 
