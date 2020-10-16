@@ -1,5 +1,5 @@
 # Géometrie Discète
-Collaborateurs : KAMMERLOCHER Leo, MUNOZ Elias.
+Collaborateurs : [KAMMERLOCHER Leo](https://github.com/Leokamm), MUNOZ Elias.
 <br/><br/>
 Installer OpenCV pour Ubuntu:
 <br/>
