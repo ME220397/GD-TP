@@ -1,7 +1,15 @@
 # Géometrie Discète
 Collaborateurs : KAMMERLOCHER Leo, MUNOZ Elias.
-Les programmes compilent sur Mac et les dernières versions d'Ubuntu. Pour les anciennes versions remplacer toute les occurences de opencv4 du Makefile par opencv
+<br/><br/>
+Installer OpenCV pour Ubuntu:
 <br/>
+$ sudo apt-get install g++ make libopencv-dev
+<br/><br/>
+Pour Mac, vous pouvez [installer opencv avec homebrew](https://formulae.brew.sh/formula/opencv) et executer la commande suivante:
+<br/>export PKG_CONFIG_PATH="/usr/local/opt/opencv@2/lib/pkgconfig"<br/>
+<br/>
+Les programmes compilent sur Mac et sur les dernières versions d'Ubuntu. Pour les anciennes versions il suffit de remplacer toute les occurences de opencv4 du Makefile par opencv.
+<br/><br/>
 TP1 :
 <br/>
 Etat : Terminé.
