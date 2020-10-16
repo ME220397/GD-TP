@@ -28,4 +28,11 @@ Etat : En cours.
 <br/>
 Sujet : [Approximation polygonale d'un contour](http://pageperso.lif.univ-mrs.fr/~edouard.thiel/ens/geodis/gd3-tp.txt)
 <br/>
+<br>
+TP4 :
+<br/>
+Etat : En attente.
+<br/>
+Sujet : [Remplissage de l'approximation polygonale ; transformations de distances par pelage](http://pageperso.lif.univ-mrs.fr/~edouard.thiel/ens/geodis/gd4-tp.txt)
+<br/>
 
