@@ -1,5 +1,6 @@
 # Géometrie Discète
 Collaborateurs : KAMMERLOCHER Leo, MUNOZ Elias.
+Les programmes compilent sur Mac et les dernières versions d'Ubuntu. Pour les anciennes versions remplacer toute les occurences de opencv4 du Makefile par opencv
 <br/>
 TP1 :
 <br/>
