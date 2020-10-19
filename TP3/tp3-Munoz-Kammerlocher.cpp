@@ -31,8 +31,8 @@ typedef struct{
 } ContourF8;
 
 typedef struct{
-    int contoury[], contourx[];
-    int flag[];
+    int * contoury, contourx;
+    int * flag;
 }ContourPol;
 
 //----------------------------------- M Y -------------------------------------
@@ -564,7 +564,7 @@ ContourPol *approximer_contour_c8(ContourF8 *contour, float seuil)
         contoury[0] = p_y;
         for (int j = 1; j< taille; j++)
         {
-            N8(Q[], ny8[], nx8[], p_x, p_y, contour[i].chaine_free[j-1]);
+            N8(Q, ny8, nx8, p_x, p_y, contour[i].chaine_free[j-1]);
             p_x = Q[0];
             p_y = Q[1];
             contourx[j] = p_x;
