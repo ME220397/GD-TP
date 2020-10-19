@@ -23,7 +23,7 @@
 
 #define HORAIRE 0
 #define ANTI_HORAIRE 1
-
+using namespace std;
 typedef struct{
     int p_y, p_x;
     int taille;
@@ -542,38 +542,76 @@ int get_taille_contourF8(ContourF8 *contour)
     return cpt;
 }
 
-
-
-ContourPol *approximer_contour_c8(ContourF8 *contour, float seuil)
-{
+void memorise_coord_contour(int px_contour[], int py_contour[], int *chaine_freeman, int taille_chaine, int indice_pos,int y_depart, int x_depart){
+    
     int nx8[8] = {1, 1, 0, -1, -1, -1, 0, 1};
-    int ny8[8] = {0, 1, 1, 1, 0, -1, -1, -1};
+    int ny8[8] = {0, 1, 1, 1, 0, -1, -1, -1};   
+    int x_curr = x_depart;
+    int y_curr = y_depart;
 
-    int taille_csF8 = get_taille_contourF8(contour);
-    ContourPol *contourpol = (ContourPol *) malloc(taille_csF8 * sizeof(ContourPol));
-    int taille=0;
-    int Q[2];
-    int p_x=0, p_y=0;
-    for(int i = 0; i < taille_csF8; i++)
-    {
-        //Initialisation
-        taille = contour[i].taille;
-        int contourx[taille], contoury[taille], const_f[taille];
-        const_f[0] = 1;
-        contourx[0] = p_x;//On met le point de départ dans contourx et contoury
-        contoury[0] = p_y;
-        for (int j = 1; j< taille; j++)
-        {
-            N8(Q, ny8, nx8, p_x, p_y, contour[i].chaine_free[j-1]);
-            p_x = Q[0];
-            p_y = Q[1];
-            contourx[j] = p_x;
-            contoury[j] = p_y;
-            const_f[i] = 1;
-        }
-        //Etape 1
-        
+    px_contour[0] = x_depart;
+    py_contour[0] = y_depart;
+    int current[2];
+    for(int i=indice_pos+1; i<taille_chaine; i++){
+        N8(current, ny8, nx8, x_depart, y_depart, chaine_freeman[i]);
+        y_curr = current[0];
+        x_curr = current[1];
+        py_contour[i+1] = y_curr;
+        px_contour[i+1] = x_curr;
     }
+}   
+
+void init_flag(int flag[], int n){
+    for(int i=0; i<n ;i++){
+        flag[i] = 1;
+    }
+}
+
+float distance(int p_x, int p_y, int q_x, int q_y) //calcule la distance entre p et q 
+{
+    return sqrt(pow((p_x - q_x) ,2) + pow((p_y - q_y),2));
+}
+
+float distance_segment(int a_x, int a_y, int b_x, int b_y, int c_x, int c_y) // calcul de distance entre le point a et le segment [bc]
+{
+    return abs((c_x -b_x) * (a_y - b_y) - (c_y - b_y) * (a_x - b_x)) / sqrt(pow((c_x - b_x),2) + pow((c_y - b_y),2));
+}
+
+ContourPol *approximer_contour_c8(int * chaine_freeman, int taille_chaine, int indice_pos, int y_depart, int x_depart, float seuil)
+{
+    int contourx[taille_chaine + 1];
+    int contoury[taille_chaine + 1];
+    int flag[taille_chaine + 1];
+
+    int p_eloigne[2];
+
+    // Etape 2
+    if(taille_chaine > 2){
+
+    }
+
+    //Initialisation 
+    memorise_coord_contour(contourx, contoury, chaine_freeman, taille_chaine, indice_pos, x_depart, y_depart);
+    init_flag(flag, taille_chaine+1);
+
+    //Etape 1
+    int max_dist = 0;
+    int taille_memo = 0;//taille de la chaine de freeman allant de A a B
+    int max_x = contourx[0];
+    int max_y = contoury[0];
+    for(int j = 1 ; j < taille_chaine ; j++){
+        if(distance(contourx[0], contoury[0], contourx[j], contoury[j]) > max_dist)
+        {
+            max_x = contourx[j];
+            max_y = contoury[j];
+            taille_memo = j;
+            max_dist = distance(contourx[0], contoury[0], contourx[j], contoury[j]);
+        }
+    }
+
+    approximer_contour_c8(chaine_freeman, taille_memo, 0, y_depart, x_depart, seuil);
+    approximer_contour_c8(chaine_freeman, taille_chaine, taille_memo, max_y, max_x, seuil);
+
 
 }//Fin approximer_contour_c8
 
@@ -601,18 +639,6 @@ void effectuer_transformations (My::Affi affi, cv::Mat img_niv)
         default : ;
     }
 }
-
-
-
-
-//----------------------------------------------TP3-----------------------------------------------------
-
-
-
-
-
-
-
 //---------------------------- C A L L B A C K S ------------------------------
 
 // Callback des sliders
