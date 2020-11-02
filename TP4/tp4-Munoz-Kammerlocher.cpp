@@ -31,6 +31,7 @@ typedef struct{
     int p_y, p_x;
     int taille;
     int* chaine_free;
+    int dir_fond;
 } ContourF8;
 
 typedef struct{
@@ -48,6 +49,11 @@ typedef struct{
     int y, x;
     int flag;
 } PointContour;
+
+typedef struct{
+    PointContour ** pc;
+    int taille;
+} PointContours;
 
 typedef struct{
     PointContour p;
@@ -614,8 +620,9 @@ void approximer_fragment_c8(PointContour pc[], int id, int n, float seuil){
     }
 }
 
-void approximer_contour_c8(int * chaine_freeman, int n, PointContour points_contour[], int y_depart, int x_depart, float seuil)
+PointContour * approximer_contour_c8(int * chaine_freeman, int n, int y_depart, int x_depart, float seuil)
 {
+    PointContour * points_contour =(PointContour *) malloc((n+1)*sizeof(PointContour));
     PointContour point_max;
     /****** Initialisation ******/
     init_points_contours(points_contour, n+1);
@@ -636,6 +643,8 @@ void approximer_contour_c8(int * chaine_freeman, int n, PointContour points_cont
     // Approximation du fragment 1
     approximer_fragment_c8(points_contour, 0 ,n_fragment1, seuil);
     approximer_fragment_c8(points_contour, n_fragment1, n_fragment2, seuil);
+
+    return points_contour;
 }//Fin approximer_contour_c8
 
 void colorier_morceau(PointContour pc[], int n, cv::Mat img_niv){
@@ -660,11 +669,14 @@ void colorier_morceau(PointContour pc[], int n, cv::Mat img_niv){
 void approximer_et_colorier_contours_c8(ContoursF8 tab_contours_F8, float seuil, cv::Mat img_niv){
     int taille_F8 = tab_contours_F8.taille;
     ContourF8 * contours_F8 = tab_contours_F8.f8;
+    PointContours pc_tab;
+    pc_tab.taille = taille_F8;
+    pc_tab.pc = (PointContour **) malloc(taille_F8*sizeof(PointContour*));
     for(int i=0; i<taille_F8; i++){
-        PointContour pc[contours_F8[i].taille +1 ];
-        approximer_contour_c8(contours_F8[i].chaine_free, contours_F8[i].taille, pc, contours_F8[i].p_y, contours_F8[i].p_x, seuil);
-        afficher_pc_stats(pc, contours_F8[i].taille +1);
-        colorier_morceau(pc, contours_F8[i].taille +1, img_niv);
+        //PointContour pc[contours_F8[i].taille +1 ];
+        pc_tab.pc[i] = approximer_contour_c8(contours_F8[i].chaine_free, contours_F8[i].taille, contours_F8[i].p_y, contours_F8[i].p_x, seuil);
+        afficher_pc_stats(pc_tab.pc[i], contours_F8[i].taille +1);
+        colorier_morceau(pc_tab.pc[i], contours_F8[i].taille +1, img_niv);
     }
 }
 
@@ -764,6 +776,7 @@ ContoursF8 effectuer_suivi_contours_c8(cv::Mat img_niv)//Permet d'editer le cont
             
             if(dir >= 0) //trouve un contour
             {
+                contours_F8[taille_F8].dir_fond=dir;
                 contours_F8[taille_F8].p_y=y;
                 contours_F8[taille_F8].p_x = x;
                 contours_F8[taille_F8].taille = 0;
