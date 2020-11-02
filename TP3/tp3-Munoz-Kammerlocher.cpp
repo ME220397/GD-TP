@@ -24,6 +24,9 @@
 #define HORAIRE 0
 #define ANTI_HORAIRE 1
 using namespace std;
+
+float seuil_dist = 0;
+
 typedef struct{
     int p_y, p_x;
     int taille;
@@ -31,9 +34,25 @@ typedef struct{
 } ContourF8;
 
 typedef struct{
+    ContourF8 * f8;
+    int taille;
+} ContoursF8;
+
+typedef struct{
     int * contoury, contourx;
     int * flag;
 }ContourPol;
+
+typedef struct{
+    int id;
+    int y, x;
+    int flag;
+} PointContour;
+
+typedef struct{
+    PointContour p;
+    float dist;
+} PointFrontiere; 
 
 //----------------------------------- M Y -------------------------------------
 
@@ -41,20 +60,22 @@ class My {
   public:
     cv::Mat img_src, img_res1, img_res2, img_niv, img_coul;
     Loupe loupe;
+    int polyg = 200;
     int seuil = 127;
     int clic_x = 0;
     int clic_y = 0;
     int clic_n = 0;
 
-    enum Recalc { R_RIEN, R_LOUPE, R_TRANSFOS, R_SEUIL };
+    enum Recalc { R_RIEN, R_LOUPE, R_TRANSFOS, R_SEUIL, R_POLYG};
     Recalc recalc = R_SEUIL;
+    Recalc recalc_polyg = R_POLYG;
 
     void reset_recalc ()             { recalc = R_RIEN; }
     void set_recalc   (Recalc level) { if (level > recalc) recalc = level; }
     int  need_recalc  (Recalc level) { return level <= recalc; }
 
     // Rajoutez ici des codes A_TRANSx pour le calcul et l'affichage
-    enum Affi { A_ORIG, A_SEUIL, A_TRANS1, A_TRANS2, A_TRANS3, A_TRANS4 };
+    enum Affi { A_ORIG, A_SEUIL, A_TRANS1, A_TRANS2, A_TRANS3, A_TRANS4, A_TRANS5 };
     Affi affi = A_ORIG;
 };
 
@@ -398,14 +419,256 @@ void transformer_bandes_diagonales (cv::Mat img_niv)
     }
 }
 
-
-//----------------------------------------------TP2-----------------------------------------------------
-
 void N8(int Q[], int ny8[], int nx8[], int y, int x, int d){
     Q[0] = y + ny8[d];
     Q[1] = x + nx8[d]; 
 }
 
+
+//---------------------------------------TP3-------------------------------------------
+int get_taille_contourF8(ContourF8 *contour)
+{
+    int cpt =0;
+    while(contour[cpt].chaine_free != NULL)
+    {
+        cpt++;
+    }
+    return cpt++;
+}
+
+void init_points_contours(PointContour pc[], int n){
+    // Etant données une taille > 0 et un tableau de points du contours
+    // Et que la taille correspond a celle du tableau 
+    if( n > 0 )
+        for(int i=0; i<n ;i++){
+            // Lorsque je passe par un point
+            // Alors je mets sa coordonné y à -1
+            pc[i].y = -1;
+            // Et je mets sa coordonnée x à -1
+            pc[i].x = -1;
+            // Et je mets son indice à -1;
+            pc[i].id = -1;
+            // Et je mets son flag à 1.
+            pc[i].flag = 1;
+        }
+}
+
+void memorise_coord_contours(PointContour pc[], int *chaine_freeman, int n){
+    // Etant données une taille > 0, un PointContour et chaine de freeman non vide
+    // Et que la taille correspond a celle de la chaine de freeman
+    int voisin[2];
+    int nx8[8] = {1, 1, 0, -1, -1, -1, 0, 1};
+    int ny8[8] = {0, 1, 1, 1, 0, -1, -1, -1};
+    if(n > 0 && chaine_freeman != NULL){
+        for(int i=0; i<n; i++){
+            // Lorsque je passe par une direction d de la chaine de freeman d'indice i
+            // Alors je récupère les coords du voisin du point d'indice i
+            N8(voisin, ny8, nx8, pc[i].y, pc[i].x, chaine_freeman[i]);
+            // Et je change la valeur de y du point d'indice i+1 a celle du voisin
+            pc[i+1].y = voisin[0];
+            // Et je change la valeur de x du point d'indice i+1 a celle du voisin
+            pc[i+1].x = voisin[1];
+            // Et je change son id avec i+1;
+            pc[i+1].id = i+1;
+        }
+    } 
+
+}
+
+float calc_distance(PointContour p, PointContour q){
+    float a = pow(q.y - p.y, 2);
+    float b = pow(q.x - p.x, 2);
+
+    return sqrt(a + b);
+}
+
+PointContour point_max_distance_de(PointContour pc[], int n){
+    PointContour *plus_loin;
+    PointContour depart = pc[0];
+    PointContour *courant;
+    float dist_max = 0, dist_courante;
+    // Etant donné une liste de points du contour non vide et un taille >0
+    // Et que la taille correspond à celle de la liste
+    if(n>0 && pc != NULL){
+        for(int i = 0; i < n; i++){
+            courant = &pc[i];
+            // Etant donnés un point de depart et un point courant
+            dist_courante = calc_distance(depart, *courant);
+            // Lorsque la distance entre depart et courant et superieur à dist_max
+            if(dist_courante > dist_max){
+                // Alors je remplace dist_max par dist_courante
+                dist_max = dist_courante;
+                // Et je memorise le point courant
+                plus_loin = courant;
+            }
+        }
+        // Lorsque le dernier point du tableau à été visité
+        // Alors je retourne le point le plus
+        return *plus_loin;
+    }
+    else{
+        printf("Error :\n\tFonction : point_max_distance_de(...)\n\tLigne 470\n");
+        exit(1);
+    }
+
+}
+
+float distance_point_segment(PointContour A, PointContour B, PointContour C){
+    int BCx = C.x - B.x;
+    int BCy = C.y - B.y;
+    int BAx = A.x - B.x;
+    int BAy = A.y - B.y; 
+
+    // les points ayant comme coordonnées (y, x) dans ce tp
+    int det = abs(BCx*BAy - BCy*BAx);
+    float normBC = sqrt(pow(BCx, 2) + pow(BCy, 2));
+
+    return det/normBC; 
+}
+
+PointFrontiere point_max_distance_de_segment(PointContour pc[], int n, int id){
+    PointContour B;
+    PointContour C;
+    PointContour * courant;
+    PointContour * plus_loin;
+    float dist_max = 0;
+    float dist_courante;
+
+    // On recupere les points B et C du segment.
+    B.y = pc[id].y;
+    B.x = pc[id].x;
+    C.y = pc[n].y;
+    C.x = pc[n].x;
+    
+    // Etant donnée une liste de points, un segment, et une taille > id
+    if(n > id){
+        // On memorise la distance max par la distance du premier point trouvé avec le segment.
+        courant = &pc[id+1];
+        dist_courante = distance_point_segment(*courant, B, C);
+        // Losque la distance entre le point courant et le segment est supérieur a dist_max
+        // Alors on remplace dist_max par dist_courante
+        dist_max = dist_courante;
+        // Et on memorise le point
+        plus_loin = courant;
+        for(int i=id+2; i< n; i++){
+            courant = &pc[i];
+            dist_courante = distance_point_segment(*courant, B, C);
+            
+            // Losque la distance entre le point courant et le segment est supérieur a dist_max
+            if(dist_courante > dist_max){
+                // Alors on remplace dist_max par dist_courante
+                dist_max = dist_courante;
+                // Et on memorise le point
+                plus_loin = courant;
+            }
+        }
+        // Lorsque le dernier point à été visité
+        // Alors on renvoir le point
+        PointFrontiere pf;
+        pf.p = *plus_loin;
+        pf.dist = dist_max;
+        return pf;
+    }
+    else {
+        printf("Error :\n\tFonction : point_max_distance_de(...)\n\tLigne ..\n");
+        exit(1);
+    }
+
+}
+
+void afficher_pc_stats(PointContour pc[], int n){
+    int nb_flag_0 = 0;
+    int nb_flag_1 = 0;
+
+    for(int i= 0; i<n; i++){
+        if(pc[i].flag == 1)
+            nb_flag_1++;
+        if(pc[i].flag == 0)
+            nb_flag_0++;
+    }
+
+    printf("%d points avec flag = 0\n", nb_flag_0);
+    printf("%d points avec flag = 1\n", nb_flag_1);
+}
+
+void approximer_fragment_c8(PointContour pc[], int id, int n, float seuil){
+
+    //Etant donné une liste de points du contour, un indice de départ et une taille >2
+    float max_dist = 0;
+    if( n - id > 2 ){
+       //On cherche dans l'intervalle ]P, Q[ le point p le plus eloigné de PQ
+       PointFrontiere pf = point_max_distance_de_segment(pc, n, id);
+       PointContour p= pf.p;
+       max_dist = pf.dist;
+       // Si la distance entre le point le plus distant du segment et inferieur au seuil
+       if(max_dist < seuil){
+           // Alors on met a 0 le flag des points du contour en excluant le premier et le dernier
+           for(int i = id+1; i < n-1; i++){
+               pc[i].flag = 0;
+           }
+       }
+       else{
+            approximer_fragment_c8(pc, id, p.id, seuil);
+            approximer_fragment_c8(pc, p.id, n, seuil);
+        }
+    }
+}
+
+void approximer_contour_c8(int * chaine_freeman, int n, PointContour points_contour[], int y_depart, int x_depart, float seuil)
+{
+    PointContour point_max;
+    /****** Initialisation ******/
+    init_points_contours(points_contour, n+1);
+
+    // Je rajoute le point de départ dans ma liste
+    points_contour[0].y = y_depart;
+    points_contour[0].x = x_depart; 
+    points_contour[0].id = 0;
+    // On récupère les points du contours
+    memorise_coord_contours(points_contour, chaine_freeman, n);
+    //Etape 1
+    // On recupère le point le plus éloigné du point de départ
+    point_max = point_max_distance_de(points_contour, n);
+
+    // On recupere la taille des deux trançons
+    int n_fragment1 = point_max.id;
+    int n_fragment2 = n+1;
+    // Approximation du fragment 1
+    approximer_fragment_c8(points_contour, 0 ,n_fragment1, seuil);
+    approximer_fragment_c8(points_contour, n_fragment1, n_fragment2, seuil);
+}//Fin approximer_contour_c8
+
+void colorier_morceau(PointContour pc[], int n, cv::Mat img_niv){
+    int num_label = 1;
+    int nb_flag_1 = 0;
+
+    for(int i = 0; i < n; i++){
+        if(nb_flag_1 == 2){
+            nb_flag_1 = 0;
+            num_label++;
+            if(num_label == 255)
+                num_label++;
+        }
+        if(pc[i].flag == 1){
+            nb_flag_1++;
+        }
+        img_niv.at<int>(pc[i].y,pc[i].x) = num_label;
+
+    }
+}
+
+void approximer_et_colorier_contours_c8(ContoursF8 tab_contours_F8, float seuil, cv::Mat img_niv){
+    int taille_F8 = tab_contours_F8.taille;
+    ContourF8 * contours_F8 = tab_contours_F8.f8;
+    for(int i=0; i<taille_F8; i++){
+        PointContour pc[contours_F8[i].taille +1 ];
+        approximer_contour_c8(contours_F8[i].chaine_free, contours_F8[i].taille, pc, contours_F8[i].p_y, contours_F8[i].p_x, seuil);
+        afficher_pc_stats(pc, contours_F8[i].taille +1);
+        colorier_morceau(pc, contours_F8[i].taille +1, img_niv);
+    }
+}
+
+//----------------------------------------------TP2-----------------------------------------------------
 
 
 int get_direction(int k, int i, int sens){
@@ -464,12 +727,11 @@ void suivre_un_contour_c8(cv::Mat img_niv, int yA, int xA, int ny8[], int nx8[],
 
     }
     while(!(x == xA && y == yA && dir == dir_finale));
-    printf("%d", dir);
-    contour_F8->chaine_free[contour_F8->taille++]=dir;
+    //contour_F8->chaine_free[contour_F8->taille++]=dir;
     
 }
 
-ContourF8 * effectuer_suivi_contours_c8(cv::Mat img_niv)//Permet d'editer le contour de l'image
+ContoursF8 effectuer_suivi_contours_c8(cv::Mat img_niv)//Permet d'editer le contour de l'image
 {
     int num_contour =1; //initialisation de la couleur du contour
     int nx8[8] = {1, 1, 0, -1, -1, -1, 0, 1};
@@ -517,112 +779,17 @@ ContourF8 * effectuer_suivi_contours_c8(cv::Mat img_niv)//Permet d'editer le con
             }
         }
     }
-    for(int i=0; i<taille_F8; i++){
-        printf("Contour %d : p_x = %d, p_y = %d\n", i, contours_F8[i].p_x, contours_F8[i].p_y);
-
-        printf("s = {");
-        for(int j=0; j<contours_F8[i].taille-1; j++)
-         printf("%d, ", contours_F8[i].chaine_free[j]);
-        printf("%d", contours_F8[i].chaine_free[contours_F8[i].taille-1]);
-        printf("}\n");
-    }
-    return contours_F8;
+    ContoursF8 csF8;
+    csF8.f8 = contours_F8;
+    csF8.taille = taille_F8;
+    return csF8;
 
 }// Fin effectuer_suivi_contours_c8
-
-
-//---------------------------------------TP3-------------------------------------------
-int get_taille_contourF8(ContourF8 *contour)
-{
-    int cpt =0;
-    while(contour[cpt].chaine_free != NULL)
-    {
-        cpt++;
-    }
-    return cpt;
-}
-
-void memorise_coord_contour(int px_contour[], int py_contour[], int *chaine_freeman, int taille_chaine, int indice_pos,int y_depart, int x_depart){
-    
-    int nx8[8] = {1, 1, 0, -1, -1, -1, 0, 1};
-    int ny8[8] = {0, 1, 1, 1, 0, -1, -1, -1};   
-    int x_curr = x_depart;
-    int y_curr = y_depart;
-
-    px_contour[0] = x_depart;
-    py_contour[0] = y_depart;
-    int current[2];
-    for(int i=indice_pos+1; i<taille_chaine; i++){
-        N8(current, ny8, nx8, x_depart, y_depart, chaine_freeman[i]);
-        y_curr = current[0];
-        x_curr = current[1];
-        py_contour[i+1] = y_curr;
-        px_contour[i+1] = x_curr;
-    }
-}   
-
-void init_flag(int flag[], int n){
-    for(int i=0; i<n ;i++){
-        flag[i] = 1;
-    }
-}
-
-float distance(int p_x, int p_y, int q_x, int q_y) //calcule la distance entre p et q 
-{
-    return sqrt(pow((p_x - q_x) ,2) + pow((p_y - q_y),2));
-}
-
-float distance_segment(int a_x, int a_y, int b_x, int b_y, int c_x, int c_y) // calcul de distance entre le point a et le segment [bc]
-{
-    return abs((c_x -b_x) * (a_y - b_y) - (c_y - b_y) * (a_x - b_x)) / sqrt(pow((c_x - b_x),2) + pow((c_y - b_y),2));
-}
-
-ContourPol *approximer_contour_c8(int * chaine_freeman, int taille_chaine, int indice_pos, int y_depart, int x_depart, float seuil)
-{
-    int contourx[taille_chaine + 1];
-    int contoury[taille_chaine + 1];
-    int flag[taille_chaine + 1];
-
-    int p_eloigne[2];
-
-    // Etape 2
-    if(taille_chaine > 2){
-
-    }
-
-    //Initialisation 
-    memorise_coord_contour(contourx, contoury, chaine_freeman, taille_chaine, indice_pos, x_depart, y_depart);
-    init_flag(flag, taille_chaine+1);
-
-    //Etape 1
-    int max_dist = 0;
-    int taille_memo = 0;//taille de la chaine de freeman allant de A a B
-    int max_x = contourx[0];
-    int max_y = contoury[0];
-    for(int j = 1 ; j < taille_chaine ; j++){
-        if(distance(contourx[0], contoury[0], contourx[j], contoury[j]) > max_dist)
-        {
-            max_x = contourx[j];
-            max_y = contoury[j];
-            taille_memo = j;
-            max_dist = distance(contourx[0], contoury[0], contourx[j], contoury[j]);
-        }
-    }
-
-    approximer_contour_c8(chaine_freeman, taille_memo, 0, y_depart, x_depart, seuil);
-    approximer_contour_c8(chaine_freeman, taille_chaine, taille_memo, max_y, max_x, seuil);
-
-
-}//Fin approximer_contour_c8
-
-
-
-
-
 
 // Appelez ici vos transformations selon affi
 void effectuer_transformations (My::Affi affi, cv::Mat img_niv)
 {
+    ContoursF8 contours_f8 = effectuer_suivi_contours_c8(img_niv);
     switch (affi) {
         case My::A_TRANS1 :
             marquer_contour_c8 (img_niv);
@@ -635,6 +802,9 @@ void effectuer_transformations (My::Affi affi, cv::Mat img_niv)
             break;
         case My::A_TRANS4 :
             effectuer_suivi_contours_c8(img_niv);
+            break;
+        case My::A_TRANS5 : 
+            approximer_et_colorier_contours_c8(contours_f8, seuil_dist, img_niv);
             break;
         default : ;
     }
@@ -653,6 +823,12 @@ void onSeuilSlide (int pos, void *data)
 {
     My *my = (My*) data;
     my->set_recalc(My::R_SEUIL);
+}
+
+void onPolygSlide (int pos, void *data)
+{
+    My *my = (My*) data;
+    my->set_recalc(My::R_POLYG);
 }
 
 
@@ -705,10 +881,11 @@ void afficher_aide() {
         "   i    inverse les couleurs de src\n"
         "   o    affiche l'image src originale\n"
         "   s    affiche l'image src seuillée\n"
-        "   1    affiche la transformation 1\n"
-        "   2    affiche la transformation 2\n"
-        "   3    affiche la transformation 3\n"
-        "   4    affiche la transformation 4\n"
+        "   1    marquer contour C8\n"
+        "   2    marquer contour C4\n"
+        "   3    numeroter contour c8\n"
+        "   4    suivi de contour c8\n"
+        "   5    Approximer et colorier contour\n"
         "  esc   quitte\n"
     << std::endl;
 }
@@ -761,24 +938,30 @@ int onKeyPressEvent (int key, void *data)
         //   My::R_SEUIL pour faire le calcul à partir de l'image originale seuillée
         //   My::R_TRANSFOS pour faire le calcul à partir de l'image actuelle
         case '1' :
-            std::cout << "Transformation 1" << std::endl;
+            std::cout << "marquer contour C8" << std::endl;
             my->affi = My::A_TRANS1;
             my->set_recalc(My::R_SEUIL);
             break;
         case '2' :
-            std::cout << "Transformation 2" << std::endl;
+            std::cout << "marquer contour C4" << std::endl;
             my->affi = My::A_TRANS2;
             my->set_recalc(My::R_SEUIL);
             break;
         case '3' :
-            std::cout << "Transformation 3" << std::endl;
+            std::cout << "numeroter contour c8" << std::endl;
             my->affi = My::A_TRANS3;
             my->set_recalc(My::R_SEUIL);
             break;
 
         case '4' :
-            std::cout << "Transformation 4" << std::endl;
+            std::cout << "suivi de contour c8" << std::endl;
             my->affi = My::A_TRANS4;
+            my->set_recalc(My::R_SEUIL);
+            break;
+
+        case '5' :
+            std::cout << "Approximer et colorier contour" << std::endl;
+            my->affi = My::A_TRANS5;
             my->set_recalc(My::R_SEUIL);
             break;
 
@@ -803,7 +986,7 @@ int main (int argc, char**argv)
     My my;
     char *nom_in1, *nom_out2, *nom_prog = argv[0];
     int zoom_w = 600, zoom_h = 500;
-
+    seuil_dist = (float)my.polyg;
     while (argc-1 > 0) {
         if (!strcmp(argv[1], "-mag")) {
             if (argc-1 < 3) { afficher_usage(nom_prog); return 1; }
@@ -840,6 +1023,8 @@ int main (int argc, char**argv)
         onZoomSlide, &my);
     cv::createTrackbar ("Seuil", "ImageSrc", &my.seuil, 255, 
         onSeuilSlide, &my);
+    cv::createTrackbar ("Polyg", "ImageSrc", &my.polyg, 1000, 
+        onPolygSlide, &my);
     cv::setMouseCallback ("ImageSrc", onMouseEventSrc, &my);
 
     cv::namedWindow ("Loupe", cv::WINDOW_AUTOSIZE);
@@ -857,6 +1042,15 @@ int main (int argc, char**argv)
             cv::cvtColor (my.img_src, img_gry, cv::COLOR_BGR2GRAY);
             cv::threshold (img_gry, img_gry, my.seuil, 255, cv::THRESH_BINARY);
             img_gry.convertTo (my.img_niv, CV_32SC1,1., 0.);
+        }
+
+        if(my.need_recalc(My::R_POLYG)){
+            std::cout << my.polyg << std::endl;
+            if (my.affi != My::A_ORIG) {
+                seuil_dist = float(my.polyg)/100.f;
+                effectuer_transformations (my.affi, my.img_niv);
+                representer_en_couleurs_vga (my.img_niv, my.img_coul);
+            } else my.img_coul = my.img_src.clone();
         }
 
         if (my.need_recalc(My::R_TRANSFOS))
