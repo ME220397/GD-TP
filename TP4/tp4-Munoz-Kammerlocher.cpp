@@ -622,29 +622,33 @@ void approximer_fragment_c8(PointContour pc[], int id, int n, float seuil){
 
 PointContour * approximer_contour_c8(int * chaine_freeman, int n, int y_depart, int x_depart, float seuil)
 {
-    PointContour * points_contour =(PointContour *) malloc((n+1)*sizeof(PointContour));
-    PointContour point_max;
-    /****** Initialisation ******/
-    init_points_contours(points_contour, n+1);
+    if(n > 0){
+        PointContour * points_contour =(PointContour *) malloc((n+1)*sizeof(PointContour));
+        PointContour point_max;
+        /****** Initialisation ******/
+        init_points_contours(points_contour, n+1);
 
-    // Je rajoute le point de départ dans ma liste
-    points_contour[0].y = y_depart;
-    points_contour[0].x = x_depart; 
-    points_contour[0].id = 0;
-    // On récupère les points du contours
-    memorise_coord_contours(points_contour, chaine_freeman, n);
-    //Etape 1
-    // On recupère le point le plus éloigné du point de départ
-    point_max = point_max_distance_de(points_contour, n);
+        // Je rajoute le point de départ dans ma liste
+        points_contour[0].y = y_depart;
+        points_contour[0].x = x_depart; 
+        points_contour[0].id = 0;
+        // On récupère les points du contours
+        memorise_coord_contours(points_contour, chaine_freeman, n);
+        //Etape 1
+        // On recupère le point le plus éloigné du point de départ
+        point_max = point_max_distance_de(points_contour, n);
 
-    // On recupere la taille des deux trançons
-    int n_fragment1 = point_max.id;
-    int n_fragment2 = n+1;
-    // Approximation du fragment 1
-    approximer_fragment_c8(points_contour, 0 ,n_fragment1, seuil);
-    approximer_fragment_c8(points_contour, n_fragment1, n_fragment2, seuil);
+        // On recupere la taille des deux trançons
+        int n_fragment1 = point_max.id;
+        int n_fragment2 = n+1;
+        // Approximation du fragment 1
+        approximer_fragment_c8(points_contour, 0 ,n_fragment1, seuil);
+        approximer_fragment_c8(points_contour, n_fragment1, n_fragment2, seuil);
 
-    return points_contour;
+        return points_contour;
+    }
+    else
+        return NULL;
 }//Fin approximer_contour_c8
 
 void colorier_morceau(PointContour pc[], int n, cv::Mat img_niv){
@@ -675,8 +679,10 @@ void approximer_et_colorier_contours_c8(ContoursF8 tab_contours_F8, float seuil,
     for(int i=0; i<taille_F8; i++){
         //PointContour pc[contours_F8[i].taille +1 ];
         pc_tab.pc[i] = approximer_contour_c8(contours_F8[i].chaine_free, contours_F8[i].taille, contours_F8[i].p_y, contours_F8[i].p_x, seuil);
-        afficher_pc_stats(pc_tab.pc[i], contours_F8[i].taille +1);
-        colorier_morceau(pc_tab.pc[i], contours_F8[i].taille +1, img_niv);
+        if(pc_tab.pc[i] != NULL){
+            //afficher_pc_stats(pc_tab.pc[i], contours_F8[i].taille +1);
+            colorier_morceau(pc_tab.pc[i], contours_F8[i].taille +1, img_niv);
+        }
     }
 }
 
