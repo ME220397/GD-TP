@@ -12,8 +12,8 @@ ifeq ($(UNAME), Darwin)
 CFLAGS  = -Wall --std=c++14 $$(pkg-config opencv --cflags)
 LIBS    = $$(pkg-config opencv --libs)
 else
-CFLAGS  = -Wall --std=c++14 $$(pkg-config opencv --cflags)
-LIBS    = $$(pkg-config opencv --libs)
+CFLAGS  = -Wall --std=c++14 $$(pkg-config opencv4 --cflags)
+LIBS    = $$(pkg-config opencv4 --libs)
 endif
 
 CFILES  := $(wildcard *.cpp)
