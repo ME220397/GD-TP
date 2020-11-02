@@ -12,7 +12,7 @@
     Renommez ce fichier tp<n°>-<vos-noms>.cpp 
     Écrivez ci-dessous vos NOMS Prénoms et la date de la version :
 
-    Kammerlocher Leo et Elias Munoz - version du 22/09/2020
+    KAMMERLOCHER Leo et MUNOZ Elias - version du 2/11/2020
 */
 
 #include <iostream>
