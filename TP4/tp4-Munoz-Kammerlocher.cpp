@@ -778,55 +778,6 @@ ContoursF8 effectuer_suivi_contours_c8(cv::Mat img_niv)//Permet d'editer le cont
                 }
             }
         }
-        
-    }
-
-
-}
-
-
-//---------------------------------------TP3-------------------------------------------
-int get_taille_contourF8(ContourF8 *contour)
-{
-    int cpt =0;
-    while(contour[cpt].chaine_free != NULL)
-    {
-        cpt++;
-    }
-    return cpt;
-}
-
-
-
-ContourPol *approximer_contour_c8(ContourF8 *contour, float seuil)
-{
-    int nx8[8] = {1, 1, 0, -1, -1, -1, 0, 1};
-    int ny8[8] = {0, 1, 1, 1, 0, -1, -1, -1};
-
-    int taille_csF8 = get_taille_contourF8(contour);
-    ContourPol *contourpol = (ContourPol *) malloc(taille_csF8 * sizeof(ContourPol));
-    int taille=0;
-    int Q[2];
-    int p_x=0, p_y=0;
-    for(int i = 0; i < taille_csF8; i++)
-    {
-        //Initialisation
-        taille = contour[i].taille;
-        int contourx[taille], contoury[taille], const_f[taille];
-        const_f[0] = 1;
-        contourx[0] = p_x;//On met le point de départ dans contourx et contoury
-        contoury[0] = p_y;
-        for (int j = 1; j< taille; j++)
-        {
-            N8(Q, ny8, nx8, p_x, p_y, contour[i].chaine_free[j-1]);
-            p_x = Q[0];
-            p_y = Q[1];
-            contourx[j] = p_x;
-            contoury[j] = p_y;
-            const_f[i] = 1;
-        }
-        //Etape 1
-        
     }
     ContoursF8 csF8;
     csF8.f8 = contours_F8;
