@@ -26,14 +26,14 @@ Sujet : [Suivi de contour et chaîne de Freeman](http://pageperso.lif.univ-mrs.f
 <br/>
 TP3 :
 <br/>
-Etat : En cours.
+Etat : Terminé.
 <br/>
 Sujet : [Approximation polygonale d'un contour](http://pageperso.lif.univ-mrs.fr/~edouard.thiel/ens/geodis/gd3-tp.txt)
 <br/>
 <br>
 TP4 :
 <br/>
-Etat : En attente.
+Etat : En cours.
 <br/>
 Sujet : [Remplissage de l'approximation polygonale ; transformations de distances par pelage](http://pageperso.lif.univ-mrs.fr/~edouard.thiel/ens/geodis/gd4-tp.txt)
 <br/>
