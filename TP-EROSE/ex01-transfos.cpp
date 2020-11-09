@@ -78,31 +78,6 @@ Point * get_point_from_dir(int d, int y, int x){
     return p;
 }
 
-bool effectuer_operation(cv::Mat img_niv, Mask mask, int type){
-    Point * current = (Point *)malloc(sizeof(Point));
-    int label;
-
-    if(type == DILATATION){
-        label = 255;
-    }
-
-    if(type == EROSION){
-        label = 0;
-    }
-    current->x = mask.origine.x;
-    current->y = mask.origine.y;
-    for(int i = 0 ; i < mask.taille ; i++)
-    {
-        int d = mask.directions[i];
-        current = get_point_from_dir(d, current->y, current->x);
-        if(img_niv.at<int>(current->y, current->x) == label)
-        {
-            return true;
-        }
-    }
-    return false;
-}
-
 // Placez ici vos fonctions de transformations à la place de ces exemples
 
 
@@ -117,24 +92,33 @@ void colorier_points_operation(cv::Mat img_niv, pointsOperation po){
     }
 }
 
-pointsOperation dilatation (cv::Mat img_niv, Mask mask)
+pointsOperation dilatation (cv::Mat img_niv, Mask m)
 {
     CHECK_MAT_TYPE(img_niv, CV_32SC1)
-    // On veut obtenir les points qui vont etre modifier lors du parcours du masque/
-    // On crée notre tableau de points
+
     pointsOperation po;
-    po.p_tab = (Point *) malloc (img_niv.rows * img_niv.cols * sizeof(Point));
-    po.taille = 0; 
+    po.taille = 0;
+    Point *pts;
+    po.p_tab = (Point*)malloc(img_niv.rows * img_niv.cols * sizeof(Point));
+
     for (int y = 0; y < img_niv.rows; y++)
     for (int x = 0; x < img_niv.cols; x++)
     {
         int g = img_niv.at<int>(y,x);
-        if (g == 0) {
-            mask.origine.x = x;
-            mask.origine.y = y;
-            if(effectuer_operation(img_niv, mask, DILATATION)){
-                mask.origine.color = 255;
-                po.p_tab[po.taille++] = mask.origine;
+        if(g == 0)
+        {  
+            m.origine.x = x;
+            m.origine.y = y;
+            for(int i = 0 ; i < m.taille ; i++)
+            {
+                int d = m.directions[i];
+                pts = get_point_from_dir( d, y, x);
+                if(img_niv.at<int>(pts->y, pts->x) == 255)
+                {
+                    m.origine.color = 255;
+                    po.p_tab[po.taille++] = m.origine;
+                    break;
+                }
             }
         }
     }
@@ -142,13 +126,13 @@ pointsOperation dilatation (cv::Mat img_niv, Mask mask)
 }
 
 
-void erosion (cv::Mat img_niv, Mask m)
+pointsOperation erosion (cv::Mat img_niv, Mask m)
 {
     CHECK_MAT_TYPE(img_niv, CV_32SC1)
 
     pointsOperation po;
     po.taille = 0;
-    Point pts;
+    Point *pts;
 
     po.p_tab = (Point*)malloc(img_niv.rows * img_niv.cols * sizeof(Point));
     for (int y = 0; y < img_niv.rows; y++)
@@ -163,7 +147,7 @@ void erosion (cv::Mat img_niv, Mask m)
             {
                 int d = m.directions[i];
                 pts = get_point_from_dir( d, y, x);
-                if(img_niv.at<int>(pts.y, pts.x) == 0)
+                if(img_niv.at<int>(pts->y, pts->x) == 0)
                 {
                     m.origine.color = 0;
                     po.p_tab[po.taille++] = m.origine;
