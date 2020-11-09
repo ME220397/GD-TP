@@ -20,7 +20,24 @@
 #include <cstring>
 #include <opencv2/opencv.hpp>
 #include "gd-util.hpp"
+// Hello
+// Definition des structures
+typedef struct{
+    int x;
+    int y;
+    int color;
+} Point;
 
+typedef struct{
+    Point origine;
+    int * directions;
+    int taille;
+ } Mask;
+
+typedef struct{
+    Point * p_tab;
+    int taille;
+ } pointsOperation;
 
 //----------------------------------- M Y -------------------------------------
 
@@ -50,7 +67,7 @@ class My {
 
 // Placez ici vos fonctions de transformations à la place de ces exemples
 
-void transformer_bandes_horizontales (cv::Mat img_niv)
+void dilatation (cv::Mat img_niv)
 {
     CHECK_MAT_TYPE(img_niv, CV_32SC1)
 
@@ -58,14 +75,14 @@ void transformer_bandes_horizontales (cv::Mat img_niv)
     for (int x = 0; x < img_niv.cols; x++)
     {
         int g = img_niv.at<int>(y,x);
-        if (g > 0) {
-            img_niv.at<int>(y,x) = y;
+        if (g == 255) {
+            
         }
     }
 }
 
 
-void transformer_bandes_verticales (cv::Mat img_niv)
+void erosion (cv::Mat img_niv)
 {
     CHECK_MAT_TYPE(img_niv, CV_32SC1)
 
