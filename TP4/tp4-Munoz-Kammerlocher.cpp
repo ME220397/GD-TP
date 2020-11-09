@@ -31,6 +31,7 @@ typedef struct{
     int p_y, p_x;
     int taille;
     int* chaine_free;
+    int dir_fond;
 } ContourF8;
 
 typedef struct{
@@ -48,6 +49,11 @@ typedef struct{
     int y, x;
     int flag;
 } PointContour;
+
+typedef struct{
+    PointContour ** pc;
+    int taille;
+} PointContours;
 
 typedef struct{
     PointContour p;
@@ -482,6 +488,17 @@ float calc_distance(PointContour p, PointContour q){
     return sqrt(a + b);
 }
 
+int get_size_pc(PointContour pc[]){
+    int i = 0;
+    int size = 0;
+    while(pc[i].id == i){
+        size++;
+        i++;
+    }
+
+    return size;
+}
+
 PointContour point_max_distance_de(PointContour pc[], int n){
     PointContour *plus_loin;
     PointContour depart = pc[0];
@@ -581,6 +598,7 @@ void afficher_pc_stats(PointContour pc[], int n){
     int nb_flag_1 = 0;
 
     for(int i= 0; i<n; i++){
+        printf(" %d", pc[i].id);
         if(pc[i].flag == 1)
             nb_flag_1++;
         if(pc[i].flag == 0)
@@ -614,28 +632,35 @@ void approximer_fragment_c8(PointContour pc[], int id, int n, float seuil){
     }
 }
 
-void approximer_contour_c8(int * chaine_freeman, int n, PointContour points_contour[], int y_depart, int x_depart, float seuil)
+PointContour * approximer_contour_c8(int * chaine_freeman, int n, int y_depart, int x_depart, float seuil)
 {
-    PointContour point_max;
-    /****** Initialisation ******/
-    init_points_contours(points_contour, n+1);
+    if(n > 0){
+        PointContour * points_contour =(PointContour *) malloc((n+1)*sizeof(PointContour));
+        PointContour point_max;
+        /****** Initialisation ******/
+        init_points_contours(points_contour, n+1);
 
-    // Je rajoute le point de départ dans ma liste
-    points_contour[0].y = y_depart;
-    points_contour[0].x = x_depart; 
-    points_contour[0].id = 0;
-    // On récupère les points du contours
-    memorise_coord_contours(points_contour, chaine_freeman, n);
-    //Etape 1
-    // On recupère le point le plus éloigné du point de départ
-    point_max = point_max_distance_de(points_contour, n);
+        // Je rajoute le point de départ dans ma liste
+        points_contour[0].y = y_depart;
+        points_contour[0].x = x_depart; 
+        points_contour[0].id = 0;
+        // On récupère les points du contours
+        memorise_coord_contours(points_contour, chaine_freeman, n);
+        //Etape 1
+        // On recupère le point le plus éloigné du point de départ
+        point_max = point_max_distance_de(points_contour, n);
 
-    // On recupere la taille des deux trançons
-    int n_fragment1 = point_max.id;
-    int n_fragment2 = n+1;
-    // Approximation du fragment 1
-    approximer_fragment_c8(points_contour, 0 ,n_fragment1, seuil);
-    approximer_fragment_c8(points_contour, n_fragment1, n_fragment2, seuil);
+        // On recupere la taille des deux trançons
+        int n_fragment1 = point_max.id;
+        int n_fragment2 = n+1;
+        // Approximation du fragment 1
+        approximer_fragment_c8(points_contour, 0 ,n_fragment1, seuil);
+        approximer_fragment_c8(points_contour, n_fragment1, n_fragment2, seuil);
+
+        return points_contour;
+    }
+    else
+        return NULL;
 }//Fin approximer_contour_c8
 
 void colorier_morceau(PointContour pc[], int n, cv::Mat img_niv){
@@ -657,19 +682,24 @@ void colorier_morceau(PointContour pc[], int n, cv::Mat img_niv){
     }
 }
 
-void approximer_et_colorier_contours_c8(ContoursF8 tab_contours_F8, float seuil, cv::Mat img_niv){
+PointContours approximer_et_colorier_contours_c8(ContoursF8 tab_contours_F8, float seuil, cv::Mat img_niv){
     int taille_F8 = tab_contours_F8.taille;
     ContourF8 * contours_F8 = tab_contours_F8.f8;
+    PointContours pc_tab;
+    pc_tab.taille = taille_F8;
+    pc_tab.pc = (PointContour **) malloc(taille_F8*sizeof(PointContour*));
     for(int i=0; i<taille_F8; i++){
-        PointContour pc[contours_F8[i].taille +1 ];
-        approximer_contour_c8(contours_F8[i].chaine_free, contours_F8[i].taille, pc, contours_F8[i].p_y, contours_F8[i].p_x, seuil);
-        afficher_pc_stats(pc, contours_F8[i].taille +1);
-        colorier_morceau(pc, contours_F8[i].taille +1, img_niv);
+        //PointContour pc[contours_F8[i].taille +1 ];
+        pc_tab.pc[i] = approximer_contour_c8(contours_F8[i].chaine_free, contours_F8[i].taille, contours_F8[i].p_y, contours_F8[i].p_x, seuil);
+        if(pc_tab.pc[i] != NULL){
+            //afficher_pc_stats(pc_tab.pc[i], contours_F8[i].taille +1);
+            colorier_morceau(pc_tab.pc[i], contours_F8[i].taille +1, img_niv);
+        }
     }
+    return pc_tab;
 }
 
 //----------------------------------------------TP2-----------------------------------------------------
-
 
 int get_direction(int k, int i, int sens){
     if(sens == HORAIRE)
@@ -764,6 +794,7 @@ ContoursF8 effectuer_suivi_contours_c8(cv::Mat img_niv)//Permet d'editer le cont
             
             if(dir >= 0) //trouve un contour
             {
+                contours_F8[taille_F8].dir_fond=dir;
                 contours_F8[taille_F8].p_y=y;
                 contours_F8[taille_F8].p_x = x;
                 contours_F8[taille_F8].taille = 0;
@@ -786,13 +817,22 @@ ContoursF8 effectuer_suivi_contours_c8(cv::Mat img_niv)//Permet d'editer le cont
 
 }// Fin effectuer_suivi_contours_c8
 
+//----------------------------------------------TP2---------------------------------------------------//
+
+void remplir_polyg(PointContour pc[], cv::Mat img_niv, cv::Scalar col){
+}
+
 // Appelez ici vos transformations selon affi
 void effectuer_transformations (My::Affi affi, cv::Mat img_niv)
 {
-    ContoursF8 contours_f8 = effectuer_suivi_contours_c8(img_niv);
+    ContoursF8 contours_f8;
+    PointContour * pc;
     switch (affi) {
         case My::A_TRANS1 :
-            marquer_contour_c8 (img_niv);
+            //marquer_contour_c8 (img_niv);
+            contours_f8 = effectuer_suivi_contours_c8(img_niv);
+            pc = approximer_contour_c8(contours_f8.f8[0].chaine_free, contours_f8.f8[0].taille, contours_f8.f8[0].p_y, contours_f8.f8[0].p_x, seuil_dist);
+            remplir_polyg(pc, img_niv, cv::Scalar(255, 0, 0));
             break;
         case My::A_TRANS2 :
             marquer_contour_c4 (img_niv);
@@ -804,11 +844,13 @@ void effectuer_transformations (My::Affi affi, cv::Mat img_niv)
             effectuer_suivi_contours_c8(img_niv);
             break;
         case My::A_TRANS5 : 
+            contours_f8 = effectuer_suivi_contours_c8(img_niv);
             approximer_et_colorier_contours_c8(contours_f8, seuil_dist, img_niv);
             break;
         default : ;
     }
 }
+
 //---------------------------- C A L L B A C K S ------------------------------
 
 // Callback des sliders
