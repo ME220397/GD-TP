@@ -488,6 +488,17 @@ float calc_distance(PointContour p, PointContour q){
     return sqrt(a + b);
 }
 
+int get_size_pc(PointContour pc[]){
+    int i = 0;
+    int size = 0;
+    while(pc[i].id == i){
+        size++;
+        i++;
+    }
+
+    return size;
+}
+
 PointContour point_max_distance_de(PointContour pc[], int n){
     PointContour *plus_loin;
     PointContour depart = pc[0];
@@ -587,6 +598,7 @@ void afficher_pc_stats(PointContour pc[], int n){
     int nb_flag_1 = 0;
 
     for(int i= 0; i<n; i++){
+        printf(" %d", pc[i].id);
         if(pc[i].flag == 1)
             nb_flag_1++;
         if(pc[i].flag == 0)
@@ -670,7 +682,7 @@ void colorier_morceau(PointContour pc[], int n, cv::Mat img_niv){
     }
 }
 
-void approximer_et_colorier_contours_c8(ContoursF8 tab_contours_F8, float seuil, cv::Mat img_niv){
+PointContours approximer_et_colorier_contours_c8(ContoursF8 tab_contours_F8, float seuil, cv::Mat img_niv){
     int taille_F8 = tab_contours_F8.taille;
     ContourF8 * contours_F8 = tab_contours_F8.f8;
     PointContours pc_tab;
@@ -684,10 +696,10 @@ void approximer_et_colorier_contours_c8(ContoursF8 tab_contours_F8, float seuil,
             colorier_morceau(pc_tab.pc[i], contours_F8[i].taille +1, img_niv);
         }
     }
+    return pc_tab;
 }
 
 //----------------------------------------------TP2-----------------------------------------------------
-
 
 int get_direction(int k, int i, int sens){
     if(sens == HORAIRE)
@@ -805,13 +817,22 @@ ContoursF8 effectuer_suivi_contours_c8(cv::Mat img_niv)//Permet d'editer le cont
 
 }// Fin effectuer_suivi_contours_c8
 
+//----------------------------------------------TP2---------------------------------------------------//
+
+void remplir_polyg(PointContour pc[], cv::Mat img_niv, cv::Scalar col){
+}
+
 // Appelez ici vos transformations selon affi
 void effectuer_transformations (My::Affi affi, cv::Mat img_niv)
 {
-    ContoursF8 contours_f8 = effectuer_suivi_contours_c8(img_niv);
+    ContoursF8 contours_f8;
+    PointContour * pc;
     switch (affi) {
         case My::A_TRANS1 :
-            marquer_contour_c8 (img_niv);
+            //marquer_contour_c8 (img_niv);
+            contours_f8 = effectuer_suivi_contours_c8(img_niv);
+            pc = approximer_contour_c8(contours_f8.f8[0].chaine_free, contours_f8.f8[0].taille, contours_f8.f8[0].p_y, contours_f8.f8[0].p_x, seuil_dist);
+            remplir_polyg(pc, img_niv, cv::Scalar(255, 0, 0));
             break;
         case My::A_TRANS2 :
             marquer_contour_c4 (img_niv);
@@ -823,11 +844,13 @@ void effectuer_transformations (My::Affi affi, cv::Mat img_niv)
             effectuer_suivi_contours_c8(img_niv);
             break;
         case My::A_TRANS5 : 
+            contours_f8 = effectuer_suivi_contours_c8(img_niv);
             approximer_et_colorier_contours_c8(contours_f8, seuil_dist, img_niv);
             break;
         default : ;
     }
 }
+
 //---------------------------- C A L L B A C K S ------------------------------
 
 // Callback des sliders

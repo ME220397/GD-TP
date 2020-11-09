@@ -9,6 +9,7 @@ SHELL	= /bin/bash
 CC      = g++
 RM      = rm -f
 ifeq ($(UNAME), Darwin)
+$(shell ./opencv.bash)
 CFLAGS  = -Wall --std=c++14 $$(pkg-config opencv --cflags)
 LIBS    = $$(pkg-config opencv --libs)
 else
