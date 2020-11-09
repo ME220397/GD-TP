@@ -20,7 +20,7 @@
 #include <cstring>
 #include <opencv2/opencv.hpp>
 #include "gd-util.hpp"
-
+// Hello
 // Definition des structures
 typedef struct{
     int x;
