@@ -20,6 +20,9 @@
 #include <cstring>
 #include <opencv2/opencv.hpp>
 #include "gd-util.hpp"
+
+#define DILATATION 0
+#define EROSION 1
 // Hello
 // Definition des structures
 typedef struct{
@@ -39,6 +42,8 @@ typedef struct{
     int taille;
  } pointsOperation;
 
+const int nx8[8] = {1, 1, 0 ,-1, -1, -1, 0, 1};
+const int ny8[8] = {0, 1, 1, 1, 0, -1, -1, -1};
 //----------------------------------- M Y -------------------------------------
 
 class My {
@@ -65,20 +70,75 @@ class My {
 
 //----------------------- T R A N S F O R M A T I O N S -----------------------
 
+Point * get_point_from_dir(int d, int y, int x){
+    Point * p = (Point *) malloc(sizeof(Point));
+    p->y= y + ny8[d];
+    p->x = x + nx8[d];
+    p->color = -1;
+    return p;
+}
+
+bool effectuer_operation(cv::Mat img_niv, Mask mask, int type){
+    Point * current = (Point *)malloc(sizeof(Point));
+    int label;
+
+    if(type == DILATATION){
+        label = 255;
+    }
+
+    if(type == EROSION){
+        label = 0;
+    }
+    current->x = mask.origine.x;
+    current->y = mask.origine.y;
+    for(int i = 0 ; i < mask.taille ; i++)
+    {
+        int d = mask.directions[i];
+        current = get_point_from_dir(d, current->y, current->x);
+        if(img_niv.at<int>(current->y, current->x) == label)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 // Placez ici vos fonctions de transformations à la place de ces exemples
 
-pointsOperation dilatation (cv::Mat img_niv)
+
+void colorier_points_operation(cv::Mat img_niv, pointsOperation po){
+    int y,x;
+    int label;
+    for(int i= 0; i<po.taille; i++){
+        y = po.p_tab[i].y;
+        x = po.p_tab[i].x;
+        label = po.p_tab[i].color;
+        img_niv.at<int>(y,x) = 1;
+    }
+}
+
+pointsOperation dilatation (cv::Mat img_niv, Mask mask)
 {
     CHECK_MAT_TYPE(img_niv, CV_32SC1)
-
+    // On veut obtenir les points qui vont etre modifier lors du parcours du masque/
+    // On crée notre tableau de points
+    pointsOperation po;
+    po.p_tab = (Point *) malloc (img_niv.rows * img_niv.cols * sizeof(Point));
+    po.taille = 0; 
     for (int y = 0; y < img_niv.rows; y++)
     for (int x = 0; x < img_niv.cols; x++)
     {
         int g = img_niv.at<int>(y,x);
-        if (g == 255) {
-            
+        if (g == 0) {
+            mask.origine.x = x;
+            mask.origine.y = y;
+            if(effectuer_operation(img_niv, mask, DILATATION)){
+                mask.origine.color = 255;
+                po.p_tab[po.taille++] = mask.origine;
+            }
         }
     }
+    return po;
 }
 
 
@@ -135,12 +195,23 @@ void transformer_bandes_diagonales (cv::Mat img_niv)
 // Appelez ici vos transformations selon affi
 void effectuer_transformations (My::Affi affi, cv::Mat img_niv)
 {
+    int dirs[4] = {0, 2, 4, 6}; // element structurant -> croix
+    Mask mask;
+    mask.directions =(int *) malloc(4*sizeof(int));
+    for(int i=0; i<4; i++){
+        mask.directions[i] = dirs[i];
+    }
+    mask.taille = 4;
+    printf("directions: %d, %d, %d, %d\n", mask.directions[0],mask.directions[1], mask.directions[2],mask.directions[3]);
+    pointsOperation po;
     switch (affi) {
         case My::A_TRANS1 :
-            transformer_bandes_horizontales (img_niv);
+            po = dilatation(img_niv, mask);
+            colorier_points_operation(img_niv, po);
             break;
         case My::A_TRANS2 :
-            transformer_bandes_verticales (img_niv);
+            po = erosion(img_niv, mask);
+            colorier_points_operation(img_niv, po);
             break;
         case My::A_TRANS3 :
             transformer_bandes_diagonales (img_niv);
