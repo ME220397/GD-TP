@@ -67,7 +67,7 @@ class My {
 
 // Placez ici vos fonctions de transformations à la place de ces exemples
 
-void dilatation (cv::Mat img_niv)
+pointsOperation dilatation (cv::Mat img_niv)
 {
     CHECK_MAT_TYPE(img_niv, CV_32SC1)
 
@@ -82,19 +82,39 @@ void dilatation (cv::Mat img_niv)
 }
 
 
-void erosion (cv::Mat img_niv)
+void erosion (cv::Mat img_niv, Mask m)
 {
     CHECK_MAT_TYPE(img_niv, CV_32SC1)
 
+    pointsOperation po;
+    po.taille = 0;
+    Point pts;
+
+    po.p_tab = (Point*)malloc(img_niv.rows * img_niv.cols * sizeof(Point));
     for (int y = 0; y < img_niv.rows; y++)
     for (int x = 0; x < img_niv.cols; x++)
     {
         int g = img_niv.at<int>(y,x);
-        if (g > 0) {
-            img_niv.at<int>(y,x) = x;
+        if(g>0)
+        {  
+            m.origine.x = x;
+            m.origine.y = y;
+            for(int i = 0 ; i < m.taille ; i++)
+            {
+                int d = m.directions[i];
+                pts = get_point_from_dir( d, y, x);
+                if(img_niv.at<int>(pts.y, pts.x) == 0)
+                {
+                    m.origine.color = 0;
+                    po.p_tab[po.taille++] = m.origine;
+                    break;
+                }
+            }
         }
     }
+    return po;
 }
+
 
 
 void transformer_bandes_diagonales (cv::Mat img_niv)

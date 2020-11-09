@@ -26,6 +26,7 @@
 using namespace std;
 
 float seuil_dist = 0;
+bool connexite4 = true; // Si c'est false ce sera de connexite 8
 
 typedef struct{
     int p_y, p_x;
@@ -75,7 +76,7 @@ class My {
     int  need_recalc  (Recalc level) { return level <= recalc; }
 
     // Rajoutez ici des codes A_TRANSx pour le calcul et l'affichage
-    enum Affi { A_ORIG, A_SEUIL, A_TRANS1, A_TRANS2, A_TRANS3, A_TRANS4, A_TRANS5 };
+    enum Affi { A_ORIG, A_SEUIL, A_TRANS1, A_TRANS2, A_TRANS3, A_TRANS4, A_TRANS5, A_TRANS7, A_TRANS8, A_TRANS9 };
     Affi affi = A_ORIG;
 };
 
@@ -185,6 +186,9 @@ bool est_point_contour(int p_y, int p_x, cv::Mat img_niv, int connexite_fond){
     
     return p_est_contour;
 }
+
+
+
 
 bool voisin_est_labele(int v){
     if(v>0 && v!=255){
@@ -731,7 +735,7 @@ void suivre_un_contour_c8(cv::Mat img_niv, int yA, int xA, int ny8[], int nx8[],
     
 }
 
-ContoursF8 effectuer_suivi_contours_c8(cv::Mat img_niv)//Permet d'editer le contour de l'image
+ContoursF8 effectuer_suivi_contours_c8(cv::Mat img_niv, int k)//Permet d'editer le contour de l'image
 {
     int num_contour =1; //initialisation de la couleur du contour
     int nx8[8] = {1, 1, 0, -1, -1, -1, 0, 1};
@@ -744,19 +748,19 @@ ContoursF8 effectuer_suivi_contours_c8(cv::Mat img_niv)//Permet d'editer le cont
         if (img_niv.at<int>(y,x) == 255) //Verifie si on est dans l'objet
         {
             int dir = -1;
-            if(x == 0 || img_niv.at<int>(y,x-1) == 0)//bord gauche
+            if(x == 0 || img_niv.at<int>(y,x-1) == k)//bord gauche
             {
                 dir = 4;
                             }
-            else if(y == 0 || img_niv.at<int>(y-1,x) == 0)//bord haut
+            else if(y == 0 || img_niv.at<int>(y-1,x) == k)//bord haut
             {
                 dir = 6;
             }
-            else if(x == img_niv.cols -1 || img_niv.at<int>(y,x+1) == 0)//bord droit
+            else if(x == img_niv.cols -1 || img_niv.at<int>(y,x+1) == k)//bord droit
             {
                 dir = 0;
             }
-            else if (y == img_niv.rows -1 || img_niv.at<int>(y+1,x) == 0)//bord bas
+            else if (y == img_niv.rows -1 || img_niv.at<int>(y+1,x) == k)//bord bas
             {
                 dir = 2;
             }
@@ -786,10 +790,43 @@ ContoursF8 effectuer_suivi_contours_c8(cv::Mat img_niv)//Permet d'editer le cont
 
 }// Fin effectuer_suivi_contours_c8
 
+//--------------------------------------------------TP 4---------------------------------------------------------------
+
+void effectuer_pelage_DT (cv::Mat img_niv, int connexite)
+{
+    for (int y = 0; y < img_niv.rows; y++)
+    for (int x = 0; x < img_niv.cols; x++)
+    {
+        if(img_niv.at<int>(x,y) > 0)
+        {
+            img_niv.at<int>(x,y) = INT_MAX;
+        }
+    }//Fin init
+    int k=0;
+    for (int y = 0; y < img_niv.rows; y++)
+    for (int x = 0; x < img_niv.cols; x++)
+    {
+        if(img_niv.at<int>(x,y) == INT_MAX)
+        {
+            ContoursF8 cs_f8 = effectuer_suivi_contours_c8(img_niv, k);
+            k+=1;
+            int taille_contour = cs_f8.f8[0].taille;
+            for(int i = 0; i < taille_contour; i++)
+            {
+                cs_f8.f8[0].chaine_free[i] = k;
+            }
+        }
+    }
+}//Fin effectuer_pelage_DT
+
+
+
+
+
 // Appelez ici vos transformations selon affi
 void effectuer_transformations (My::Affi affi, cv::Mat img_niv)
 {
-    ContoursF8 contours_f8 = effectuer_suivi_contours_c8(img_niv);
+    ContoursF8 contours_f8 = effectuer_suivi_contours_c8(img_niv, 0);
     switch (affi) {
         case My::A_TRANS1 :
             marquer_contour_c8 (img_niv);
@@ -801,10 +838,30 @@ void effectuer_transformations (My::Affi affi, cv::Mat img_niv)
             numeroter_contour_c8 (img_niv);
             break;
         case My::A_TRANS4 :
-            effectuer_suivi_contours_c8(img_niv);
+            effectuer_suivi_contours_c8(img_niv, 0);
             break;
         case My::A_TRANS5 : 
             approximer_et_colorier_contours_c8(contours_f8, seuil_dist, img_niv);
+            break;
+        
+
+        case My::A_TRANS7 :
+            //effectuer_suivi_contours_c8(img_niv, 0);
+            //approximer_et_remplir_contours_c8
+            effectuer_pelage_DT(img_niv, connexite4);
+            break;
+        case My::A_TRANS8 :
+            //effectuer_suivi_contours_c8
+            //approximer_et_remplir_contours_c8
+            //effectuer_pelage_DT 
+            //detecter_maximums_locaux
+            break;
+        case My::A_TRANS9 :
+            //effectuer_suivi_contours_c8
+            //approximer_et_remplir_contours_c8
+            //effectuer_pelage_DT 
+            //detecter_maximums_locaux
+            //effectuer_pelage_RDT
             break;
         default : ;
     }
@@ -881,11 +938,16 @@ void afficher_aide() {
         "   i    inverse les couleurs de src\n"
         "   o    affiche l'image src originale\n"
         "   s    affiche l'image src seuillée\n"
+        "   c    changer de connexité\n"
         "   1    marquer contour C8\n"
         "   2    marquer contour C4\n"
         "   3    numeroter contour c8\n"
         "   4    suivi de contour c8\n"
         "   5    Approximer et colorier contour\n"
+
+        "   7    effectuer le pelage DT\n"
+        "   8    detecter les maximums locaux\n"
+        "   9    effectuer le pelage RDT\n"
         "  esc   quitte\n"
     << std::endl;
 }
@@ -937,6 +999,15 @@ int onKeyPressEvent (int key, void *data)
         // Dans my->set_recalc, passez :
         //   My::R_SEUIL pour faire le calcul à partir de l'image originale seuillée
         //   My::R_TRANSFOS pour faire le calcul à partir de l'image actuelle
+        case 'c' :
+            std::cout << "changer de connexité" << std::endl;
+            if(connexite4 == true)
+                connexite4 = false;
+            else
+                connexite4 = true;
+            printf("%d\n", connexite4);
+            break;
+
         case '1' :
             std::cout << "marquer contour C8" << std::endl;
             my->affi = My::A_TRANS1;
@@ -961,6 +1032,24 @@ int onKeyPressEvent (int key, void *data)
 
         case '5' :
             std::cout << "Approximer et colorier contour" << std::endl;
+            my->affi = My::A_TRANS5;
+            my->set_recalc(My::R_SEUIL);
+            break;
+
+        case '7' :
+            std::cout << "effectuer le pelage DT" << std::endl;
+            my->affi = My::A_TRANS5;
+            my->set_recalc(My::R_SEUIL);
+            break;
+        
+        case '8' :
+            std::cout << "detecter les maximums locaux" << std::endl;
+            my->affi = My::A_TRANS5;
+            my->set_recalc(My::R_SEUIL);
+            break;
+
+        case '9' :
+            std::cout << "effectuer le pelage RDT" << std::endl;
             my->affi = My::A_TRANS5;
             my->set_recalc(My::R_SEUIL);
             break;
