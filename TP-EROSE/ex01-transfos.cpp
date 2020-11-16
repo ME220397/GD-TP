@@ -63,7 +63,7 @@ class My {
     int  need_recalc  (Recalc level) { return level <= recalc; }
 
     // Rajoutez ici des codes A_TRANSx pour le calcul et l'affichage
-    enum Affi { A_ORIG, A_SEUIL, A_TRANS1, A_TRANS2, A_TRANS3, A_TRANS4 };
+    enum Affi { A_ORIG, A_SEUIL, A_TRANS1, A_TRANS2, A_TRANS3, A_TRANS4, A_TRANS5, A_TRANS6, A_TRANS7, A_TRANS8 };
     Affi affi = A_ORIG;
 };
 
@@ -74,7 +74,6 @@ Point * get_point_from_dir(int d, int y, int x){
     Point * p = (Point *) malloc(sizeof(Point));
     p->y= y + ny8[d];
     p->x = x + nx8[d];
-    p->color = -1;
     return p;
 }
 
@@ -112,9 +111,17 @@ pointsOperation dilatation (cv::Mat img_niv, Mask m)
             for(int i = 0 ; i < m.taille ; i++)
             {
                 int d = m.directions[i];
+                int color;
                 pts = get_point_from_dir( d, y, x);
-                if(img_niv.at<int>(pts->y, pts->x) == 255)
+                if(pts->x > img_niv.cols - 1 || pts->x < 0 || pts->y > img_niv.rows - 1 || pts->y < 0)
                 {
+                    color = 0;
+                }
+                else
+                    color =img_niv.at<int>(pts->y, pts->x);
+                if(color == 255)
+                {
+
                     m.origine.color = 255;
                     po.p_tab[po.taille++] = m.origine;
                     break;
@@ -146,8 +153,13 @@ pointsOperation erosion (cv::Mat img_niv, Mask m)
             for(int i = 0 ; i < m.taille ; i++)
             {
                 int d = m.directions[i];
+                int color;
                 pts = get_point_from_dir( d, y, x);
-                if(img_niv.at<int>(pts->y, pts->x) == 0)
+                if(pts->x > img_niv.cols -1 || pts->x < 0 || pts->y > img_niv.rows -1 || pts->y < 0)
+                    color = 255;
+                else 
+                    color = img_niv.at<int>(pts->y, pts->x);
+                if(color == 0)
                 {
                     m.origine.color = 0;
                     po.p_tab[po.taille++] = m.origine;
@@ -175,6 +187,42 @@ void fermeture(cv::Mat img_niv, Mask m){
     colorier_points_operation(img_niv, po);
 }
 
+float f(int x, int choix)
+{
+    if(choix == 0)
+        return x;//f(x) = x
+    if(choix == 1)
+        return x*std::sin(x)+50;
+    else
+        return (x*x-x)/50;
+}
+
+void dessine_fonction(cv::Mat img_niv, int choix)
+{
+    CHECK_MAT_TYPE(img_niv, CV_32SC1)
+
+    for (int y = 0; y < img_niv.rows; y++)
+    for (int x = 0; x < img_niv.cols; x++)
+    {
+        if(f(x, choix) <= y)
+            img_niv.at<int>(y,x) = 0;
+        else
+            img_niv.at<int>(y,x) = 255;    
+    }
+}
+
+pointsOperation erosion_fonctionnelle(cv::Mat img_niv, Mask m, int choix)
+{
+    dessine_fonction(img_niv, choix);
+    return erosion(img_niv, m);
+}
+
+pointsOperation dilatation_fonctionnelle(cv::Mat img_niv, Mask m, int choix)
+{
+    dessine_fonction(img_niv, choix);
+    return dilatation(img_niv, m);
+}
+
 void transformer_bandes_diagonales (cv::Mat img_niv)
 {
     CHECK_MAT_TYPE(img_niv, CV_32SC1)
@@ -188,6 +236,7 @@ void transformer_bandes_diagonales (cv::Mat img_niv)
         }
     }
 }
+
 
 
 // Appelez ici vos transformations selon affi
@@ -216,6 +265,22 @@ void effectuer_transformations (My::Affi affi, cv::Mat img_niv)
             break;
         case My::A_TRANS4 :
             fermeture(img_niv, mask);
+            break;
+        case My::A_TRANS5 :
+            po = erosion_fonctionnelle(img_niv, mask,22);
+            colorier_points_operation(img_niv, po);
+            break;
+        case My::A_TRANS6 :
+            po = dilatation_fonctionnelle(img_niv, mask, 2);
+            colorier_points_operation(img_niv, po);
+            break;
+        case My::A_TRANS7 :
+            po = erosion_fonctionnelle(img_niv, mask,1);
+            colorier_points_operation(img_niv, po);
+            break;
+        case My::A_TRANS8 :
+            po = dilatation_fonctionnelle(img_niv, mask, 1);
+            colorier_points_operation(img_niv, po);
             break;
         default : ;
     }
@@ -292,6 +357,10 @@ void afficher_aide() {
         "   2    Erosion ensembliste\n"
         "   3    ouverture ensembliste\n"
         "   4    fermeture ensembliste\n"
+        "   5    Erosion fonctionnelle f(x) = y"
+        "   6    Dilatation fonctionnelle f(x) = y"
+        "   7    Erosion fonctionnelle (x/4)*sin(x)"
+        "   8    Dilatation fonctionnelle (x/4)*sin(x)"
         "  esc   quitte\n"
     << std::endl;
 }
@@ -360,10 +429,29 @@ int onKeyPressEvent (int key, void *data)
             break;
         case '4' :
             std::cout << "Fermeture ensembliste" << std::endl;
-            my->affi = My::A_TRANS3;
+            my->affi = My::A_TRANS4;
             my->set_recalc(My::R_SEUIL);
             break;
-
+        case '5' :
+            std::cout << "Erosion fonctionnelle f(x) = x" << std::endl;
+            my->affi = My::A_TRANS5;
+            my->set_recalc(My::R_SEUIL);
+            break;
+        case '6' :
+            std::cout << "dilatation fonctionnelle f(x) = x" << std::endl;
+            my->affi = My::A_TRANS6;
+            my->set_recalc(My::R_SEUIL);
+            break;
+        case '7' :
+            std::cout << "Erosion fonctionnelle f(x) = (x/4)*sin(x)" << std::endl;
+            my->affi = My::A_TRANS7;
+            my->set_recalc(My::R_SEUIL);
+            break;
+        case '8' :
+            std::cout << "Dilatation fonctionnelle f(x) = (x/4)*sin(x)" << std::endl;
+            my->affi = My::A_TRANS8;
+            my->set_recalc(My::R_SEUIL);
+            break;
         default :
             //std::cout << "Touche '" << char(key) << "'" << std::endl;
             break;
