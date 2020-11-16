@@ -63,7 +63,7 @@ class My {
     int  need_recalc  (Recalc level) { return level <= recalc; }
 
     // Rajoutez ici des codes A_TRANSx pour le calcul et l'affichage
-    enum Affi { A_ORIG, A_SEUIL, A_TRANS1, A_TRANS2, A_TRANS3 };
+    enum Affi { A_ORIG, A_SEUIL, A_TRANS1, A_TRANS2, A_TRANS3, A_TRANS4 };
     Affi affi = A_ORIG;
 };
 
@@ -88,7 +88,7 @@ void colorier_points_operation(cv::Mat img_niv, pointsOperation po){
         y = po.p_tab[i].y;
         x = po.p_tab[i].x;
         label = po.p_tab[i].color;
-        img_niv.at<int>(y,x) = 1;
+        img_niv.at<int>(y,x) = label;
     }
 }
 
@@ -159,7 +159,21 @@ pointsOperation erosion (cv::Mat img_niv, Mask m)
     return po;
 }
 
+void ouverture(cv::Mat img_niv, Mask m){
+    pointsOperation po;
+    po = erosion(img_niv, m);
+    colorier_points_operation(img_niv, po);
+    po = dilatation(img_niv, m);
+    colorier_points_operation(img_niv, po);
+}
 
+void fermeture(cv::Mat img_niv, Mask m){
+    pointsOperation po;
+    po = dilatation(img_niv, m);
+    colorier_points_operation(img_niv, po);
+    po = erosion(img_niv, m);
+    colorier_points_operation(img_niv, po);
+}
 
 void transformer_bandes_diagonales (cv::Mat img_niv)
 {
@@ -198,7 +212,10 @@ void effectuer_transformations (My::Affi affi, cv::Mat img_niv)
             colorier_points_operation(img_niv, po);
             break;
         case My::A_TRANS3 :
-            transformer_bandes_diagonales (img_niv);
+            ouverture(img_niv, mask);
+            break;
+        case My::A_TRANS4 :
+            fermeture(img_niv, mask);
             break;
         default : ;
     }
@@ -271,9 +288,10 @@ void afficher_aide() {
         "   i    inverse les couleurs de src\n"
         "   o    affiche l'image src originale\n"
         "   s    affiche l'image src seuillée\n"
-        "   1    affiche la transformation 1\n"
-        "   2    affiche la transformation 2\n"
-        "   3    affiche la transformation 3\n"
+        "   1    Dilatation ensembliste\n"
+        "   2    Erosion ensembliste\n"
+        "   3    ouverture ensembliste\n"
+        "   4    fermeture ensembliste\n"
         "  esc   quitte\n"
     << std::endl;
 }
@@ -326,17 +344,22 @@ int onKeyPressEvent (int key, void *data)
         //   My::R_SEUIL pour faire le calcul à partir de l'image originale seuillée
         //   My::R_TRANSFOS pour faire le calcul à partir de l'image actuelle
         case '1' :
-            std::cout << "Transformation 1" << std::endl;
+            std::cout << "Dilatation ensembliste" << std::endl;
             my->affi = My::A_TRANS1;
             my->set_recalc(My::R_SEUIL);
             break;
         case '2' :
-            std::cout << "Transformation 2" << std::endl;
+            std::cout << "Erosion ensembliste" << std::endl;
             my->affi = My::A_TRANS2;
             my->set_recalc(My::R_SEUIL);
             break;
         case '3' :
-            std::cout << "Transformation 3" << std::endl;
+            std::cout << "Ouverture ensembliste" << std::endl;
+            my->affi = My::A_TRANS3;
+            my->set_recalc(My::R_SEUIL);
+            break;
+        case '4' :
+            std::cout << "Fermeture ensembliste" << std::endl;
             my->affi = My::A_TRANS3;
             my->set_recalc(My::R_SEUIL);
             break;
