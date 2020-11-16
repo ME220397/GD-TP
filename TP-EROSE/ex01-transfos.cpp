@@ -63,7 +63,7 @@ class My {
     int  need_recalc  (Recalc level) { return level <= recalc; }
 
     // Rajoutez ici des codes A_TRANSx pour le calcul et l'affichage
-    enum Affi { A_ORIG, A_SEUIL, A_TRANS1, A_TRANS2, A_TRANS3, A_TRANS4, A_TRANS5, A_TRANS6, A_TRANS7, A_TRANS8 };
+    enum Affi { A_ORIG, A_SEUIL, A_TRANS1, A_TRANS2, A_TRANS3, A_TRANS4, A_TRANS5, A_TRANS6, A_TRANS7 };
     Affi affi = A_ORIG;
 };
 
@@ -278,10 +278,7 @@ void effectuer_transformations (My::Affi affi, cv::Mat img_niv)
             po = erosion_fonctionnelle(img_niv, mask,1);
             colorier_points_operation(img_niv, po);
             break;
-        case My::A_TRANS8 :
-            po = dilatation_fonctionnelle(img_niv, mask, 1);
-            colorier_points_operation(img_niv, po);
-            break;
+
         default : ;
     }
 }
@@ -357,10 +354,9 @@ void afficher_aide() {
         "   2    Erosion ensembliste\n"
         "   3    ouverture ensembliste\n"
         "   4    fermeture ensembliste\n"
-        "   5    Erosion fonctionnelle f(x) = y"
-        "   6    Dilatation fonctionnelle f(x) = y"
-        "   7    Erosion fonctionnelle (x/4)*sin(x)"
-        "   8    Dilatation fonctionnelle (x/4)*sin(x)"
+        "   5    Afficher fonction"
+        "   6    Dilatation fonctionnelle"
+        "   7    Erosion fonctionnelle"
         "  esc   quitte\n"
     << std::endl;
 }
@@ -433,23 +429,18 @@ int onKeyPressEvent (int key, void *data)
             my->set_recalc(My::R_SEUIL);
             break;
         case '5' :
-            std::cout << "Erosion fonctionnelle f(x) = x" << std::endl;
+            std::cout << "Affichage fonction" << std::endl;
             my->affi = My::A_TRANS5;
             my->set_recalc(My::R_SEUIL);
             break;
         case '6' :
-            std::cout << "dilatation fonctionnelle f(x) = x" << std::endl;
+            std::cout << "dilatation fonctionnelle" << std::endl;
             my->affi = My::A_TRANS6;
             my->set_recalc(My::R_SEUIL);
             break;
         case '7' :
-            std::cout << "Erosion fonctionnelle f(x) = (x/4)*sin(x)" << std::endl;
+            std::cout << "Erosion fonctionnelle" << std::endl;
             my->affi = My::A_TRANS7;
-            my->set_recalc(My::R_SEUIL);
-            break;
-        case '8' :
-            std::cout << "Dilatation fonctionnelle f(x) = (x/4)*sin(x)" << std::endl;
-            my->affi = My::A_TRANS8;
             my->set_recalc(My::R_SEUIL);
             break;
         default :
