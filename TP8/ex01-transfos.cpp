@@ -16,10 +16,26 @@
 */
 
 #include <iostream>
+#include <queue>
 #include <iomanip>
 #include <cstring>
 #include <opencv2/opencv.hpp>
 #include "gd-util.hpp"
+
+#define  INIT -1
+#define  MASK -2
+#define  WSHED 0
+#define FICTITIOUS (-1, -1)
+
+typedef struct{
+    int x, y;
+    int label;
+} Point;
+
+typedef struct{
+    Point *p;
+    int taille;
+} WshedImage;
 
 
 //----------------------------------- M Y -------------------------------------
@@ -47,21 +63,92 @@ class My {
 
 
 //----------------------- T R A N S F O R M A T I O N S -----------------------
+void swap(Point p[], int low, int high){
+    Point p;
+    p.x = p[low].x;
+    p.y = p[low].y;
+    p.label = p[low].label;
+
+    p[low].x = p[high].x;
+    p[low].y = p[high].y;
+    p[low].label = p[high].label;
+
+    p[high].x = p.x;
+    p[high].y = p.y;
+    p[high].label = p.label;
+
+}
+
+void partition(Point p[], int low, int high){
+    int pivot = p[hight].label;
+    int i = low - 1;
+    for(j = low; j<= high - 1; j++){
+        if(p[j].label <= pivot){
+            i++;
+            swap(p, low, high);
+        }
+    }
+}
+
+void quickSort(Point p[], int low, int hight){
+    if (low < hight)
+    {
+        /* pi is partitioning index, arr[pi] is now
+           at right place */
+        pi = partition(arr, low, high);
+
+        quickSort(arr, low, pi - 1);  // Before pi
+        quickSort(arr, pi + 1, high); // After pi
+    }
+}
+
 
 // Placez ici vos fonctions de transformations à la place de ces exemples
+void Watershed_by_immersion(cv::Mat img_niv){
+    // Get the gray scale image from img_niv
+    cv::Mat img_gray;
+    cv::cvtColor(img_niv, img_gray, cv::COLOR_BGR2GRAY);
+    // Algo
+    int current_label = 0;
+    std::queue<Point> fifo;
+
+    // initialisation
+    int n = img_niv.rows*img_niv.cols;
+    int label_p[n];
+    float dist_p[n];
+    Point pixels[n];
+    int cpt = 0;
+    int hmin = 256, hmax = 0;
+    for(int i = 0; i<n; i++){
+        label_p[i] = INIT;
+        dist_p[i] = 0;
+    }
+    for(int y = 0; y<img_niv.rows; y++){
+        for(int x = 0; x<img_niv.cols; x++){
+            pixels[cpt].y = y;
+            pixels[cpt].x = x;
+            current_label = img_gray.at<int>(y,x);
+            pixels[cpt].label = current_label;
+
+            if(hmin  > current_label)
+                hmin = current_label;
+            if(hmax < current_label)
+                hmax = current_label;
+        }
+    }
+    current_label = 0;
+    // Use a quicksort
+    sort_pixel(pixels, hmin, hmax);
+
+
+}
+
 
 void transformer_bandes_horizontales (cv::Mat img_niv)
 {
     CHECK_MAT_TYPE(img_niv, CV_32SC1)
 
-    for (int y = 0; y < img_niv.rows; y++)
-    for (int x = 0; x < img_niv.cols; x++)
-    {
-        int g = img_niv.at<int>(y,x);
-        if (g > 0) {
-            img_niv.at<int>(y,x) = y;
-        }
-    }
+    
 }
 
 
