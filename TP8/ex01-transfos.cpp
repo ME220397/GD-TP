@@ -141,8 +141,127 @@ void Watershed_by_immersion(cv::Mat img_niv){
     sort_pixel(pixels, hmin, hmax);
 
 
+    for(int h = hmin; h <= hmax; h++){
+        for(int p = 0; p < n; p++){
+            if(pixels[p].label = h)
+            { 
+                label_p[p] = MASK;
+                if(a_voisin_q(p))
+                {
+                    dist_p[p] = 1;
+                    fifo.push(p)
+                }
+            }
+        }
+        int curdist = 1;
+        fifo.push(FICTITIOUS);
+        for(;;)
+        {
+            p=fifo.back();
+            fifo.pop();
+            if(p = FICTITIOUS)
+            {
+                if(fifo.empty)
+                    break;
+                else
+                {
+                    fifo.push(FICTITIOUS);
+                    curdist += 1;
+                    p=fifo.back();
+                    fifo.pop();
+                }
+            }
+            int NG[4] = {p+1, p+img_niv.cols, p-1, p-img_niv.cols};
+            for(int q = 0; q<4; q++)
+            {
+                if(dist_p[NG[q]] < curdist && (label_p[NG[q]] > 0 || label_p[NG[q]] = WSHED))
+                {
+                    if(label_p[NG[q]] > 0)
+                    {
+                        if(label_p[p] == MASK || label_p[p] == WSHED)
+                        {
+                            label_p[p] = label_p[NG[q]];
+                        }
+
+                        else if(label_p[p]!=label_p[NG[q]])
+                        {
+                            label_p = WSHED;
+                        }
+
+                    }
+                    else if(label_p[p] == MASK)
+                    {
+                        label_p[p] = WSHED;
+                    }
+                }
+                else if(label_p[NG[q]] == MASK && dist_p[NG[q]] == 0)
+                {
+                    dist_p[NG[q]]=curdist + 1;
+                    fifo.push(NG[q]);
+                }
+            }
+        }
+
+        //ligne 54
+        for(int p = 0; p < n; p++)
+        {
+            if(pixels[p].label = h)
+            {
+                dist_p[p] = 0;
+                if(label_p[p] == MASK)
+                {
+                    current_label += 1;
+                    fifo.push(p);
+                    label_p = current_label;
+                    while(!fifo.empty())
+                    {
+                        q = fifo.back();
+                        fifo.pop();
+                        NG = {q+1, q+img_niv.cols, q-1, q-img_niv.cols};
+                        for(int r = 0; r < 4; r++)
+                        {
+                            if(label_p[NG[r]] == MASK)
+                            {
+                                fifo.push(NG[r]);
+                                label_p[NG[r]] = current_label;
+                            }
+                        }
+                    }
+                }
+
+            }
+        }
+    }
+
 }
 
+bool a_voisin_q(int p)
+{
+    if(p > img_niv.cols)//Verifie si le point n'est pas sur la premiere ligne
+    {
+        if(label_p[p - img_niv.cols] > 0 || label_p[p - img_niv.cols] = WSHED)
+            return true;
+    }
+
+    if(p < n - img_niv.cols)//Si le point n'est pas sur la derniere ligne
+    {
+        if(label_p[p + img_niv.cols] > 0 || label_p[p + img_niv.cols] = WSHED)
+            return true;
+    }
+
+    if(p%img_niv.cols != 0)//S'il n'est pas sur la premiere colonne
+    {
+        if(label_p[p-1] > 0 || label_p[p-1] = WSHED)
+            return true;
+    }
+
+    if(p%img_niv.cols != img_niv.cols-1)//S'il n'est pas sur la derniere colonne
+    {
+        if(label_p[p+1] > 0 || label_p[p+1] = WSHED)
+            return true;
+    }
+    return false;
+}
 
 void transformer_bandes_horizontales (cv::Mat img_niv)
 {
