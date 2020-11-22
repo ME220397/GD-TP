@@ -44,6 +44,9 @@ typedef struct{
 
 const int nx8[8] = {1, 1, 0 ,-1, -1, -1, 0, 1};
 const int ny8[8] = {0, 1, 1, 1, 0, -1, -1, -1};
+
+const int nx16[16] = {2, 2, 2, 1, 0, -1, -2, -2, -2, -2, -2, -1, 0, 1, 2, 2};
+const int ny16[16] = {0, 1, 2, 2, 2, 2, 2, 1, 0, -1, -2, -2, -2, -2, -2, -1};
 //----------------------------------- M Y -------------------------------------
 
 class My {
@@ -63,7 +66,7 @@ class My {
     int  need_recalc  (Recalc level) { return level <= recalc; }
 
     // Rajoutez ici des codes A_TRANSx pour le calcul et l'affichage
-    enum Affi { A_ORIG, A_SEUIL, A_TRANS1, A_TRANS2, A_TRANS3, A_TRANS4, A_TRANS5, A_TRANS6, A_TRANS7 };
+    enum Affi { A_ORIG, A_SEUIL, A_TRANS1, A_TRANS2, A_TRANS3, A_TRANS4, A_TRANS5, A_TRANS6, A_TRANS7, A_TRANS8, A_TRANS9 };
     Affi affi = A_ORIG;
 };
 
@@ -72,22 +75,34 @@ class My {
 
 Point * get_point_from_dir(int d, int y, int x){
     Point * p = (Point *) malloc(sizeof(Point));
-    p->y= y + ny8[d];
-    p->x = x + nx8[d];
+    if(d < 8)
+    {
+        p->y= y + ny8[d];
+        p->x = x + nx8[d];
+    }
+    else
+    {
+        p->y= y + ny16[d-8];
+        p->x = x + nx16[d-8];
+    }
     return p;
 }
-
 // Placez ici vos fonctions de transformations à la place de ces exemples
 
 
-void colorier_points_operation(cv::Mat img_niv, pointsOperation po){
+void colorier_points_operation(cv::Mat img_niv, pointsOperation po, int color){
     int y,x;
     int label;
     for(int i= 0; i<po.taille; i++){
         y = po.p_tab[i].y;
         x = po.p_tab[i].x;
         label = po.p_tab[i].color;
-        img_niv.at<int>(y,x) = label;
+        if(y != -1 && x != -1 && label !=-1){
+            if(color == -1)
+                img_niv.at<int>(y,x) = label;
+            else
+                img_niv.at<int>(y,x) = color;
+        }
     }
 }
 
@@ -99,6 +114,11 @@ pointsOperation dilatation (cv::Mat img_niv, Mask m)
     po.taille = 0;
     Point *pts;
     po.p_tab = (Point*)malloc(img_niv.rows * img_niv.cols * sizeof(Point));
+    for(int i = 0; i< img_niv.rows*img_niv.cols; i++){
+        po.p_tab[i].x = -1;
+        po.p_tab[i].y = -1;
+        po.p_tab[i].color = -1;
+    }
 
     for (int y = 0; y < img_niv.rows; y++)
     for (int x = 0; x < img_niv.cols; x++)
@@ -129,6 +149,7 @@ pointsOperation dilatation (cv::Mat img_niv, Mask m)
             }
         }
     }
+    free(pts);
     return po;
 }
 
@@ -142,6 +163,11 @@ pointsOperation erosion (cv::Mat img_niv, Mask m)
     Point *pts;
 
     po.p_tab = (Point*)malloc(img_niv.rows * img_niv.cols * sizeof(Point));
+    for(int i = 0; i< img_niv.rows*img_niv.cols; i++){
+        po.p_tab[i].x = -1;
+        po.p_tab[i].y = -1;
+        po.p_tab[i].color = -1;
+    }
     for (int y = 0; y < img_niv.rows; y++)
     for (int x = 0; x < img_niv.cols; x++)
     {
@@ -168,23 +194,31 @@ pointsOperation erosion (cv::Mat img_niv, Mask m)
             }
         }
     }
+    free(pts);
     return po;
 }
 
 void ouverture(cv::Mat img_niv, Mask m){
-    pointsOperation po;
-    po = erosion(img_niv, m);
-    colorier_points_operation(img_niv, po);
-    po = dilatation(img_niv, m);
-    colorier_points_operation(img_niv, po);
+    pointsOperation po_erode;
+    pointsOperation po_dilate;
+    po_erode = erosion(img_niv, m);
+    colorier_points_operation(img_niv, po_erode, -1);
+    free(po_erode.p_tab);
+    po_dilate = dilatation(img_niv, m);
+    colorier_points_operation(img_niv, po_dilate, -1);
+    free(po_dilate.p_tab);
+    
 }
 
 void fermeture(cv::Mat img_niv, Mask m){
-    pointsOperation po;
-    po = dilatation(img_niv, m);
-    colorier_points_operation(img_niv, po);
-    po = erosion(img_niv, m);
-    colorier_points_operation(img_niv, po);
+    pointsOperation po_erode;
+    pointsOperation po_dilate;
+    po_dilate = dilatation(img_niv, m);
+    colorier_points_operation(img_niv, po_dilate, -1);
+    free(po_dilate.p_tab);
+    po_erode = erosion(img_niv, m);
+    colorier_points_operation(img_niv, po_erode, -1);
+    free(po_erode.p_tab);
 }
 
 float f(int x, int choix)
@@ -237,50 +271,130 @@ void transformer_bandes_diagonales (cv::Mat img_niv)
     }
 }
 
-
-
+void print_function_used(int choix){
+   switch(choix){
+        case 0 :
+            std::cout << "Fonction choisi : f(x) = x" << std::endl;
+            break;
+        case 1 :
+            std::cout << "Fonction choisi : f(x) = x*sin(x)+50" << std::endl;
+            break;
+        case 2 :
+            std::cout << "Fonction choisi : f(x) = (x¨2-X)/50" << std::endl;
+            break;
+        default:
+            break;
+   }
+}
+int function_used = -1;
+int ensembliste = -1;
+int choix_mask = 0;
 // Appelez ici vos transformations selon affi
 void effectuer_transformations (My::Affi affi, cv::Mat img_niv)
 {
     int dirs[4] = {0, 2, 4, 6}; // element structurant -> croix
-    Mask mask;
+    Mask mask; // Masque symetrique
     mask.directions =(int *) malloc(4*sizeof(int));
     for(int i=0; i<4; i++){
         mask.directions[i] = dirs[i];
     }
     mask.taille = 4;
-    printf("directions: %d, %d, %d, %d\n", mask.directions[0],mask.directions[1], mask.directions[2],mask.directions[3]);
-    pointsOperation po;
+    int dirs2[3] = {2,1,9};
+    Mask mask2; // masque non symetrique
+    mask2.directions =(int *) malloc(3*sizeof(int));
+    for(int i=0; i<3; i++){
+        mask2.directions[i] = dirs2[i];
+    }
+    mask2.taille = 3;
+    Mask current;
+    pointsOperation po_erode;
+    pointsOperation po_dilate;
+    if(choix_mask == 0) current = mask;
+    else current = mask2;
     switch (affi) {
         case My::A_TRANS1 :
-            po = dilatation(img_niv, mask);
-            colorier_points_operation(img_niv, po);
+            po_dilate = dilatation(img_niv, current);
+            colorier_points_operation(img_niv, po_dilate, -1);
+            free(po_dilate.p_tab);
             break;
         case My::A_TRANS2 :
-            po = erosion(img_niv, mask);
-            colorier_points_operation(img_niv, po);
+            po_erode = erosion(img_niv, current);
+            colorier_points_operation(img_niv, po_erode, -1);
+            free(po_erode.p_tab);
             break;
         case My::A_TRANS3 :
-            ouverture(img_niv, mask);
+            ouverture(img_niv, current);
             break;
         case My::A_TRANS4 :
-            fermeture(img_niv, mask);
+            fermeture(img_niv, current);
             break;
         case My::A_TRANS5 :
-            po = erosion_fonctionnelle(img_niv, mask,22);
-            colorier_points_operation(img_niv, po);
+            function_used = (function_used + 1)%3;
+            print_function_used(function_used);
+            dessine_fonction(img_niv, function_used);
             break;
         case My::A_TRANS6 :
-            po = dilatation_fonctionnelle(img_niv, mask, 2);
-            colorier_points_operation(img_niv, po);
+            if(function_used == -1)
+                std::cout << "Veuillez selectionner une fonction en appuyant sur la touche 5\n" << std::endl;
+            else {
+                print_function_used(function_used);
+                po_dilate = dilatation_fonctionnelle(img_niv, current, function_used);
+                colorier_points_operation(img_niv, po_dilate, -1);
+                free(po_dilate.p_tab);
+            }
             break;
         case My::A_TRANS7 :
-            po = erosion_fonctionnelle(img_niv, mask,1);
-            colorier_points_operation(img_niv, po);
+            if(function_used == -1)
+                std::cout << "Veuillez selectionner une fonction en appuyant sur la touche 5\n" << std::endl;
+            else {
+                print_function_used(function_used);
+                po_erode = erosion_fonctionnelle(img_niv, current, function_used);
+                colorier_points_operation(img_niv, po_erode, -1);
+                free(po_erode.p_tab);
+            
+            }
             break;
-
+        case My::A_TRANS8 :
+            ensembliste = (ensembliste+1)%2;
+            if(ensembliste == 1){
+                std::cout << "Gradient sur les ensembles" <<std::endl;
+                po_erode = erosion(img_niv, current);
+                po_dilate = dilatation(img_niv, current);
+                colorier_points_operation(img_niv, po_erode , 1);
+                colorier_points_operation(img_niv, po_dilate , 20);
+                free(po_erode.p_tab);
+                free(po_dilate.p_tab);
+            }
+            else {
+                if(function_used == -1)
+                    std::cout << "Veuillez selectionner une fonction en appuyant sur la touche 5\n" << std::endl;
+                else {
+                    std::cout << "Gradient sur les fonctions" << std::endl;
+                    po_erode = erosion_fonctionnelle(img_niv, current, function_used);
+                    po_dilate = dilatation_fonctionnelle(img_niv, current, function_used);
+                    colorier_points_operation(img_niv, po_erode , 1);
+                    colorier_points_operation(img_niv, po_dilate , 20); 
+                    free(po_erode.p_tab);
+                    free(po_dilate.p_tab);
+                }
+            }
+           
+            std::cout << "Gradient = gradient erosion + gradient dilatation = bleu + marron\n" << std::endl;
+            break;
+        case My::A_TRANS9 :
+            choix_mask = (choix_mask +1)%2;
+            if(choix_mask == 0){
+                std::cout << "Mask symetrique choisi : 4-voisins\n" << std::endl;
+            }
+            else{
+                std::cout << "Mask non symetrique choisi : point d'origine -> voisin bas -> voisin droit -> voisin droit\n" << std::endl;
+            }
+            break;
         default : ;
     }
+   //free(mask.directions);
+    //free(mask2.directions);
+
 }
 
 
@@ -354,9 +468,11 @@ void afficher_aide() {
         "   2    Erosion ensembliste\n"
         "   3    ouverture ensembliste\n"
         "   4    fermeture ensembliste\n"
-        "   5    Afficher fonction"
-        "   6    Dilatation fonctionnelle"
-        "   7    Erosion fonctionnelle"
+        "   5    Afficher fonction\n"
+        "   6    Dilatation fonctionnelle\n"
+        "   7    Erosion fonctionnelle\n"
+        "   8    Gradient morphologique\n"
+        "   9    Switch masque symetrique / non symetrique\n" 
         "  esc   quitte\n"
     << std::endl;
 }
@@ -441,6 +557,16 @@ int onKeyPressEvent (int key, void *data)
         case '7' :
             std::cout << "Erosion fonctionnelle" << std::endl;
             my->affi = My::A_TRANS7;
+            my->set_recalc(My::R_SEUIL);
+            break;
+        case '8' :
+            std::cout << "Gradient morphologique" << std::endl;
+            my->affi = My::A_TRANS8;
+            my->set_recalc(My::R_SEUIL);
+            break;
+        case '9' :
+            std::cout << "Switch masque symetrique / non symetrique" << std::endl;
+            my->affi = My::A_TRANS9;
             my->set_recalc(My::R_SEUIL);
             break;
         default :
