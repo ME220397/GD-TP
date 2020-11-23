@@ -63,51 +63,48 @@ class My {
 
 
 //----------------------- T R A N S F O R M A T I O N S -----------------------
-void swap(Point p[], int low, int high){
-    Point p;
-    p.x = p[low].x;
-    p.y = p[low].y;
-    p.label = p[low].label;
 
-    p[low].x = p[high].x;
-    p[low].y = p[high].y;
-    p[low].label = p[high].label;
-
-    p[high].x = p.x;
-    p[high].y = p.y;
-    p[high].label = p.label;
-
+bool is_sorted(Point *p, int n){
+    for(int i=0; i<n-1; i++){
+        if(p[i].label > p[i+1].label)
+            return false;
+    }
+    return true;
 }
 
-void partition(Point p[], int low, int high){
-    int pivot = p[hight].label;
-    int i = low - 1;
-    for(j = low; j<= high - 1; j++){
+int partition(Point p[], int begin, int end){
+    int pivot = p[end].label;
+    int i = (begin-1);
+    for(int j = begin; j<end; j++){
         if(p[j].label <= pivot){
             i++;
-            swap(p, low, high);
+
+            Point tmp = p[i];
+            p[i] = p[j];
+            p[j] = tmp;
         }
     }
+    Point tmp = p[i+1];
+    p[i+1] = p[end];
+    p[end] = tmp;
+    return i+1;
 }
 
-void quickSort(Point p[], int low, int hight){
-    if (low < hight)
-    {
-        /* pi is partitioning index, arr[pi] is now
-           at right place */
-        pi = partition(arr, low, high);
+void quickSort(Point p[], int begin, int end){
+    if(begin < end){
+        int pId = partition(p, begin, end);
 
-        quickSort(arr, low, pi - 1);  // Before pi
-        quickSort(arr, pi + 1, high); // After pi
+        quickSort(p, begin, pId - 1);
+        quickSort(p, pId+1, end);
+
     }
 }
-
-
 // Placez ici vos fonctions de transformations à la place de ces exemples
 void Watershed_by_immersion(cv::Mat img_niv){
+    CHECK_MAT_TYPE(img_niv, CV_32SC1)
     // Get the gray scale image from img_niv
-    cv::Mat img_gray;
-    cv::cvtColor(img_niv, img_gray, cv::COLOR_BGR2GRAY);
+    //cv::Mat img_gray;
+    //cv::cvtColor(img_niv, img_gray, cv::COLOR_BGR2GRAY);
     // Algo
     int current_label = 0;
     std::queue<Point> fifo;
@@ -127,20 +124,18 @@ void Watershed_by_immersion(cv::Mat img_niv){
         for(int x = 0; x<img_niv.cols; x++){
             pixels[cpt].y = y;
             pixels[cpt].x = x;
-            current_label = img_gray.at<int>(y,x);
-            pixels[cpt].label = current_label;
-
+            current_label = img_niv.at<int>(y,x);
+            pixels[cpt].label = current_label;   
             if(hmin  > current_label)
                 hmin = current_label;
             if(hmax < current_label)
                 hmax = current_label;
+            cpt++;
         }
     }
     current_label = 0;
-    // Use a quicksort
-    sort_pixel(pixels, hmin, hmax);
-
-
+    quickSort(pixels, 0, n-1);
+    std::cout << "Sorted : "<< is_sorted(pixels, n) << std::endl;
 }
 
 
@@ -187,7 +182,7 @@ void effectuer_transformations (My::Affi affi, cv::Mat img_niv)
 {
     switch (affi) {
         case My::A_TRANS1 :
-            transformer_bandes_horizontales (img_niv);
+            Watershed_by_immersion(img_niv);
             break;
         case My::A_TRANS2 :
             transformer_bandes_verticales (img_niv);
@@ -323,7 +318,7 @@ int onKeyPressEvent (int key, void *data)
         case '1' :
             std::cout << "Transformation 1" << std::endl;
             my->affi = My::A_TRANS1;
-            my->set_recalc(My::R_SEUIL);
+            my->set_recalc(My::R_TRANSFOS);
             break;
         case '2' :
             std::cout << "Transformation 2" << std::endl;
@@ -406,10 +401,10 @@ int main (int argc, char**argv)
 
         if (my.need_recalc(My::R_SEUIL)) 
         {
-            // std::cout << "Calcul seuil" << std::endl;
+            // std::cout << "Calcul seuil" << std::endl;                                /////A regarder_______________
             cv::Mat img_gry;
             cv::cvtColor (my.img_src, img_gry, cv::COLOR_BGR2GRAY);
-            cv::threshold (img_gry, img_gry, my.seuil, 255, cv::THRESH_BINARY);
+            //cv::threshold (img_gry, img_gry, my.seuil, 255, cv::THRESH_TOZERO);
             img_gry.convertTo (my.img_niv, CV_32SC1,1., 0.);
         }
 
@@ -418,7 +413,14 @@ int main (int argc, char**argv)
             // std::cout << "Calcul transfos" << std::endl;
             if (my.affi != My::A_ORIG) {
                 effectuer_transformations (my.affi, my.img_niv);
-                representer_en_couleurs_vga (my.img_niv, my.img_coul);
+                for (int y = 0; y < my.img_niv.rows; y++) {
+                    for (int x = 0; x < my.img_niv.cols; x++) {
+                        my.img_coul.at<cv::Vec3b>(y,x)[0] = my.img_niv.at<int>(y, x);
+                        my.img_coul.at<cv::Vec3b>(y,x)[1] = my.img_niv.at<int>(y, x);
+                        my.img_coul.at<cv::Vec3b>(y,x)[2] = my.img_niv.at<int>(y, x);
+                    }
+                 }
+                //representer_en_couleurs_vga (my.img_niv, my.img_coul);
             } else my.img_coul = my.img_src.clone();
         }
 
