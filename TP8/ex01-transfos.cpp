@@ -63,44 +63,7 @@ class My {
 
 
 //----------------------- T R A N S F O R M A T I O N S -----------------------
-void swap(Point p[], int low, int high){
-    Point p;
-    p.x = p[low].x;
-    p.y = p[low].y;
-    p.label = p[low].label;
 
-    p[low].x = p[high].x;
-    p[low].y = p[high].y;
-    p[low].label = p[high].label;
-
-    p[high].x = p.x;
-    p[high].y = p.y;
-    p[high].label = p.label;
-
-}
-
-void partition(Point p[], int low, int high){
-    int pivot = p[hight].label;
-    int i = low - 1;
-    for(j = low; j<= high - 1; j++){
-        if(p[j].label <= pivot){
-            i++;
-            swap(p, low, high);
-        }
-    }
-}
-
-void quickSort(Point p[], int low, int hight){
-    if (low < hight)
-    {
-        /* pi is partitioning index, arr[pi] is now
-           at right place */
-        pi = partition(arr, low, high);
-
-        quickSort(arr, low, pi - 1);  // Before pi
-        quickSort(arr, pi + 1, high); // After pi
-    }
-}
 
 
 // Placez ici vos fonctions de transformations à la place de ces exemples
@@ -146,7 +109,7 @@ void Watershed_by_immersion(cv::Mat img_niv){
             if(pixels[p].label = h)
             { 
                 label_p[p] = MASK;
-                if(a_voisin_q(p))
+                if(a_voisin_q(p,n, img_niv))
                 {
                     dist_p[p] = 1;
                     fifo.push(p)
@@ -212,17 +175,18 @@ void Watershed_by_immersion(cv::Mat img_niv){
                 {
                     current_label += 1;
                     fifo.push(p);
-                    label_p = current_label;
+                    label_p[p] = current_label;
                     while(!fifo.empty())
                     {
-                        q = fifo.back();
+                        Point pts = fifo.back();
+                        int q = (pts.y-1)*img_niv.cols + pts.x;
                         fifo.pop();
-                        NG = {q+1, q+img_niv.cols, q-1, q-img_niv.cols};
+                        int NG[4] = {q+1, q+img_niv.cols, q-1, q-img_niv.cols};
                         for(int r = 0; r < 4; r++)
                         {
                             if(label_p[NG[r]] == MASK)
                             {
-                                fifo.push(NG[r]);
+                                fifo.push(pixels[NG[r]]);
                                 label_p[NG[r]] = current_label;
                             }
                         }
@@ -235,29 +199,34 @@ void Watershed_by_immersion(cv::Mat img_niv){
 
 }
 
-bool a_voisin_q(int p)
+bool a_voisin_q(int p, int n, cv::Mat img_niv)
 {
+    int label_p[n];
+    for(int i = 0; i<n; i++)
+    {
+        label_p[i] = INIT;
+    }
     if(p > img_niv.cols)//Verifie si le point n'est pas sur la premiere ligne
     {
-        if(label_p[p - img_niv.cols] > 0 || label_p[p - img_niv.cols] = WSHED)
+        if(label_p[p - img_niv.cols] > 0 || label_p[p - img_niv.cols] == WSHED)
             return true;
     }
 
     if(p < n - img_niv.cols)//Si le point n'est pas sur la derniere ligne
     {
-        if(label_p[p + img_niv.cols] > 0 || label_p[p + img_niv.cols] = WSHED)
+        if(label_p[p + img_niv.cols] > 0 || label_p[p + img_niv.cols] == WSHED)
             return true;
     }
 
     if(p%img_niv.cols != 0)//S'il n'est pas sur la premiere colonne
     {
-        if(label_p[p-1] > 0 || label_p[p-1] = WSHED)
+        if(label_p[p-1] > 0 || label_p[p-1] == WSHED)
             return true;
     }
 
     if(p%img_niv.cols != img_niv.cols-1)//S'il n'est pas sur la derniere colonne
     {
-        if(label_p[p+1] > 0 || label_p[p+1] = WSHED)
+        if(label_p[p+1] > 0 || label_p[p+1] == WSHED)
             return true;
     }
     return false;
