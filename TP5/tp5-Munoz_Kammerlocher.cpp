@@ -20,7 +20,7 @@
 #include <cstring>
 #include <opencv2/opencv.hpp>
 #include "gd-util.hpp"
-
+#include <string.h>
 
 //----------------------------------- M Y -------------------------------------
 
@@ -45,6 +45,23 @@ class My {
     Affi affi = A_ORIG;
 };
 
+enum NumeroMasque { _D4, M_D8, M_2_3, M_3_4, M_5_7_11, M_LAST }
+
+typedef struct{
+    int p_y, p_x;
+    int poids;
+} Ponderation;
+
+typedef struct{
+    Ponderation * ponderations;
+    int taille;
+    NumeroMasque num_masque;
+    string nom;
+} DemiMasque;
+
+
+Déclarez un type DemiMasque mémorisant une liste de pondérations et sa taille,
+un NumeroMasque, et le nom du masque ou de la distance (pour affichage).
 
 //----------------------- T R A N S F O R M A T I O N S -----------------------
 
