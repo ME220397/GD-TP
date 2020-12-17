@@ -264,6 +264,25 @@ void detecter_maximums_locaux (cv::Mat img_niv, DemiMasque demi_masque)
         masque.pond[i + demi_masque.taille] = demi_masque.pond[i];
     }
 
+    cv::Mat img_dt;
+    img_dt = img_niv;
+
+    for (int y = 0; y < img_dt.rows; y++)
+    for (int x = 0; x < img_dt.cols; x++)
+    {
+        for (int i = 0 ; i < masque.taille ; i++)
+        {
+            if(y + masque.pond[i].p_y >= 0 && y + masque.pond[i].p_y < img_dt.rows && x + masque.pond[i].p_x >= 0 && x + masque.pond[i].p_x < img_dt.cols)
+            {
+                if (img_dt.at<int>(y,x) <= img_dt.at<int>(y + masque.pond[i].p_y, x + masque.pond[i].p_x) - masque.pond[i].poids)
+                {
+                    img_dt.at<int>(y,x) = 0;
+                    break;
+                }
+            }
+        }
+    }
+
 }
 
 
