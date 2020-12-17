@@ -208,9 +208,12 @@ void calculer_Rosenfeld_DT (cv::Mat img_niv, DemiMasque demi_m)
             min = img_niv.at<int>(y,x);
             for (int i = 0 ; i< demi_m.taille ; i++)
             {
-                if(min > img_niv.at<int>(y-demi_m.pond[i].p_y, x-demi_m.pond[i].p_x) + demi_m.pond[i].poids)
+                if(y-demi_m.pond[i].p_y >= 0 && x-demi_m.pond[i].p_x >= 0)
                 {
-                    min = img_niv.at<int>(y-demi_m.pond[i].p_y, x-demi_m.pond[i].p_x) + demi_m.pond[i].poids;
+                    if(min > img_niv.at<int>(y-demi_m.pond[i].p_y, x-demi_m.pond[i].p_x) + demi_m.pond[i].poids)
+                    {
+                        min = img_niv.at<int>(y-demi_m.pond[i].p_y, x-demi_m.pond[i].p_x) + demi_m.pond[i].poids;
+                    }
                 }
             }
             img_niv.at<int>(y,x) = min;
@@ -227,21 +230,41 @@ void calculer_Rosenfeld_DT (cv::Mat img_niv, DemiMasque demi_m)
             min = img_niv.at<int>(y,x);
             for (int i = 0 ; i< demi_m.taille ; i++)
             {
-                if(min > img_niv.at<int>(y+demi_m.pond[i].p_y, x+demi_m.pond[i].p_x) + demi_m.pond[i].poids)
+                if(y+demi_m.pond[i].p_y < img_niv.rows && x+demi_m.pond[i].p_x < img_niv.cols)
                 {
-                    min = img_niv.at<int>(y+demi_m.pond[i].p_y, x+demi_m.pond[i].p_x) + demi_m.pond[i].poids;
+                    if(min > img_niv.at<int>(y+demi_m.pond[i].p_y, x+demi_m.pond[i].p_x) + demi_m.pond[i].poids)
+                    {
+                        min = img_niv.at<int>(y+demi_m.pond[i].p_y, x+demi_m.pond[i].p_x) + demi_m.pond[i].poids;
+                    }
                 }
             }
             img_niv.at<int>(y,x) = min;
         }
     }//balayage arrière
 
-
-
 }
 
 
+void detecter_maximums_locaux (cv::Mat img_niv, DemiMasque demi_masque)
+{
+    CHECK_MAT_TYPE(img_niv, CV_32SC1)
 
+    DemiMasque masque;//Creation d'un masque complet
+    masque.nom = demi_masque.nom;
+    masque.num_masque = demi_masque.num_masque;
+    masque.taille = demi_masque.taille * 2;
+    for (int i = 0 ; i < demi_masque.taille ; i++)
+    {
+        masque.pond[i] = demi_masque.pond[i];
+        demi_masque.pond[i].p_x = -demi_masque.pond[i].p_x;//calcul du demi masque inverse
+        demi_masque.pond[i].p_y = -demi_masque.pond[i].p_y;
+    }
+    for (int i = 0 ; i < demi_masque.taille ; i++)
+    {
+        masque.pond[i + demi_masque.taille] = demi_masque.pond[i];
+    }
+
+}
 
 
 
