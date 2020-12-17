@@ -22,28 +22,8 @@
 #include "gd-util.hpp"
 #include <string.h>
 
-//----------------------------------- M Y -------------------------------------
 
-class My {
-  public:
-    cv::Mat img_src, img_res1, img_res2, img_niv, img_coul;
-    Loupe loupe;
-    int seuil = 127;
-    int clic_x = 0;
-    int clic_y = 0;
-    int clic_n = 0;
 
-    enum Recalc { R_RIEN, R_LOUPE, R_TRANSFOS, R_SEUIL };
-    Recalc recalc = R_SEUIL;
-
-    void reset_recalc ()             { recalc = R_RIEN; }
-    void set_recalc   (Recalc level) { if (level > recalc) recalc = level; }
-    int  need_recalc  (Recalc level) { return level <= recalc; }
-
-    // Rajoutez ici des codes A_TRANSx pour le calcul et l'affichage
-    enum Affi { A_ORIG, A_SEUIL, A_TRANS1, A_TRANS2, A_TRANS3 };
-    Affi affi = A_ORIG;
-};
 
 enum NumeroMasque { M_D4, M_D8, M_2_3, M_3_4, M_5_7_11, M_LAST };
 
@@ -183,10 +163,107 @@ de pondérations avec les pondérations pour le balayage arrière, c'est-à-dire
 telles que (y > 0) ou (y == 0 et x > 0).*/
 }//constructeur de DemiMasque
 
+//----------------------------------- M Y -------------------------------------
+
+class My {
+  public:
+    cv::Mat img_src, img_res1, img_res2, img_niv, img_coul;
+    Loupe loupe;
+    int seuil = 127;
+    int clic_x = 0;
+    int clic_y = 0;
+    int clic_n = 0;
+
+    enum Recalc { R_RIEN, R_LOUPE, R_TRANSFOS, R_SEUIL };
+    Recalc recalc = R_SEUIL;
+
+    void reset_recalc ()             { recalc = R_RIEN; }
+    void set_recalc   (Recalc level) { if (level > recalc) recalc = level; }
+    int  need_recalc  (Recalc level) { return level <= recalc; }
+
+    // Rajoutez ici des codes A_TRANSx pour le calcul et l'affichage
+    enum Affi { A_ORIG, A_SEUIL, A_TRANS1, A_TRANS2, A_TRANS3 };
+    Affi affi = A_ORIG;
+
+    NumeroMasque num = M_D8;
+    DemiMasque demi_m = const_demi_masque(num);
+};
+
+
 
 //----------------------- T R A N S F O R M A T I O N S -----------------------
 
 // Placez ici vos fonctions de transformations à la place de ces exemples
+
+
+void calculer_Rosenfeld_DT (cv::Mat img_niv, DemiMasque demi_m)
+{
+    CHECK_MAT_TYPE(img_niv, CV_32SC1)
+    int min = 0;
+    for (int y = 0; y < img_niv.rows; y++)
+    for (int x = 0; x < img_niv.cols; x++)
+    {
+        if(img_niv.at<int>(y,x) != 0)
+        {
+            min = img_niv.at<int>(y,x);
+            for (int i = 0 ; i< demi_m.taille ; i++)
+            {
+                if(min > img_niv.at<int>(y-demi_m.pond[i].p_y, x-demi_m.pond[i].p_x) + demi_m.pond[i].poids)
+                {
+                    min = img_niv.at<int>(y-demi_m.pond[i].p_y, x-demi_m.pond[i].p_x) + demi_m.pond[i].poids;
+                }
+            }
+            img_niv.at<int>(y,x) = min;
+        }
+        
+    }//balayge avant
+    min = 0;
+    
+    for (int y = img_niv.rows-1; y >=0 ; y--)
+    for (int x = img_niv.cols; x >=0 ; x--)
+    {
+        if(img_niv.at<int>(y,x) != 0)
+        {
+            min = img_niv.at<int>(y,x);
+            for (int i = 0 ; i< demi_m.taille ; i++)
+            {
+                if(min > img_niv.at<int>(y+demi_m.pond[i].p_y, x+demi_m.pond[i].p_x) + demi_m.pond[i].poids)
+                {
+                    min = img_niv.at<int>(y+demi_m.pond[i].p_y, x+demi_m.pond[i].p_x) + demi_m.pond[i].poids;
+                }
+            }
+            img_niv.at<int>(y,x) = min;
+        }
+    }//balayage arrière
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void transformer_bandes_horizontales (cv::Mat img_niv)
 {
@@ -384,6 +461,11 @@ int onKeyPressEvent (int key, void *data)
         case '3' :
             std::cout << "Transformation 3" << std::endl;
             my->affi = My::A_TRANS3;
+            my->set_recalc(My::R_SEUIL);
+            break;
+
+        case 'd' :
+            //std::cout << demi_m.nom << std::endl;
             my->set_recalc(My::R_SEUIL);
             break;
 
