@@ -45,7 +45,7 @@ class My {
     Affi affi = A_ORIG;
 };
 
-enum NumeroMasque { _D4, M_D8, M_2_3, M_3_4, M_5_7_11, M_LAST }
+enum NumeroMasque { M_D4, M_D8, M_2_3, M_3_4, M_5_7_11, M_LAST };
 
 typedef struct{
     int p_y, p_x;
@@ -53,15 +53,136 @@ typedef struct{
 } Ponderation;
 
 typedef struct{
-    Ponderation * ponderations;
     int taille;
+    Ponderation * pond;
     NumeroMasque num_masque;
-    string nom;
+    std::string nom;
 } DemiMasque;
 
+DemiMasque const_demi_masque(NumeroMasque num)
+{
+    DemiMasque demi_m;
+    demi_m.num_masque = num;
+    Ponderation ponder;
+    switch(num)
+    {
+        case M_D4 :
+            demi_m.nom = "M_D4";
+            demi_m.taille = 2;
+            ponder.poids = 1;
+            ponder.p_x = 1;
+            ponder.p_y = 0;
+            demi_m.pond[0] = ponder;
+            ponder.p_x = 0;
+            ponder.p_y = 1;
+            demi_m.pond[1] = ponder;
+            break;
+        case M_D8 :
+            demi_m.nom = "M_D8";
+            ponder.poids = 1;
+            ponder.p_x = 1;
+            ponder.p_y = 0;
+            demi_m.pond[0] = ponder;
+            ponder.p_x = 1;
+            ponder.p_y = 1;
+            demi_m.pond[1] = ponder;
+            ponder.p_x = 0;
+            ponder.p_y = 1;
+            demi_m.pond[2] = ponder;
+            ponder.p_x = -1;
+            ponder.p_y = 1;
+            demi_m.pond[3] = ponder;
+            break;
+        case M_2_3 :
+            demi_m.nom = "M_2_3";
+            ponder.poids = 2;
+            ponder.p_x = 1;
+            ponder.p_y = 0;
+            demi_m.pond[0] = ponder;
+            ponder.poids = 3;
+            ponder.p_x = 1;
+            ponder.p_y = 1;
+            demi_m.pond[1] = ponder;
+            ponder.poids = 2;
+            ponder.p_x = 0;
+            ponder.p_y = 1;
+            demi_m.pond[2] = ponder;
+            ponder.poids = 3;
+            ponder.p_x = -1;
+            ponder.p_y = 1;
+            demi_m.pond[3] = ponder;
 
-Déclarez un type DemiMasque mémorisant une liste de pondérations et sa taille,
-un NumeroMasque, et le nom du masque ou de la distance (pour affichage).
+            break;
+        case M_3_4 :
+            demi_m.nom = "M_3_4";
+            ponder.poids = 3;
+            ponder.p_x = 1;
+            ponder.p_y = 0;
+            demi_m.pond[0] = ponder;
+            ponder.poids = 4;
+            ponder.p_x = 1;
+            ponder.p_y = 1;
+            demi_m.pond[1] = ponder;
+            ponder.poids = 3;
+            ponder.p_x = 0;
+            ponder.p_y = 1;
+            demi_m.pond[2] = ponder;
+            ponder.poids = 4;
+            ponder.p_x = -1;
+            ponder.p_y = 1;
+            demi_m.pond[3] = ponder;
+
+            break;
+        case M_5_7_11 :
+            demi_m.nom = "M_5_7_11";
+            ponder.poids = 5;
+            ponder.p_x = 1;
+            ponder.p_y = 0;
+            demi_m.pond[0] = ponder;
+            ponder.poids = 7;
+            ponder.p_x = 1;
+            ponder.p_y = 1;
+            demi_m.pond[1] = ponder;
+            ponder.poids = 5;
+            ponder.p_x = 0;
+            ponder.p_y = 1;
+            demi_m.pond[2] = ponder;
+            ponder.poids = 7;
+            ponder.p_x = -1;
+            ponder.p_y = 1;
+            demi_m.pond[3] = ponder;
+
+            ponder.poids = 11;
+            ponder.p_x = 2;
+            ponder.p_y = 1;
+            demi_m.pond[4] = ponder;
+
+            ponder.poids = 11;
+            ponder.p_x = 1;
+            ponder.p_y = 2;
+            demi_m.pond[5] = ponder;
+
+            ponder.poids = 11;
+            ponder.p_x = -1;
+            ponder.p_y = 2;
+            demi_m.pond[6] = ponder;
+
+            ponder.poids = 11;
+            ponder.p_x = -2;
+            ponder.p_y = 1;
+            demi_m.pond[7] = ponder;
+            break;
+        case M_LAST :
+            demi_m.nom = "M_LAST";
+            break;
+    }
+    return demi_m;
+/*Le constructeur de DemiMasque prendra en paramètre un NumeroMasque, puis selon
+sa valeur, initialisera le membre nom à un nom explicite, et peuplera la liste
+de pondérations avec les pondérations pour le balayage arrière, c'est-à-dire
+telles que (y > 0) ou (y == 0 et x > 0).*/
+}//constructeur de DemiMasque
+
 
 //----------------------- T R A N S F O R M A T I O N S -----------------------
 
