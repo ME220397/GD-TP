@@ -35,20 +35,23 @@ typedef struct{
 typedef struct{
     int taille;
     Ponderation * pond;
-    NumeroMasque num_masque;
+    int num_masque;
     std::string nom;
 } DemiMasque;
 
-DemiMasque const_demi_masque(NumeroMasque num)
+DemiMasque const_demi_masque(int num)
 {
     DemiMasque demi_m;
     demi_m.num_masque = num;
     Ponderation ponder;
+    
     switch(num)
     {
         case M_D4 :
+            
             demi_m.nom = "M_D4";
             demi_m.taille = 2;
+            demi_m.pond = (Ponderation*)malloc(demi_m.taille*sizeof(Ponderation));
             ponder.poids = 1;
             ponder.p_x = 1;
             ponder.p_y = 0;
@@ -59,6 +62,8 @@ DemiMasque const_demi_masque(NumeroMasque num)
             break;
         case M_D8 :
             demi_m.nom = "M_D8";
+            demi_m.taille = 4;
+            demi_m.pond = (Ponderation*)malloc(demi_m.taille*sizeof(Ponderation));
             ponder.poids = 1;
             ponder.p_x = 1;
             ponder.p_y = 0;
@@ -75,6 +80,8 @@ DemiMasque const_demi_masque(NumeroMasque num)
             break;
         case M_2_3 :
             demi_m.nom = "M_2_3";
+            demi_m.taille = 4;
+            demi_m.pond = (Ponderation*)malloc(demi_m.taille*sizeof(Ponderation));
             ponder.poids = 2;
             ponder.p_x = 1;
             ponder.p_y = 0;
@@ -95,6 +102,8 @@ DemiMasque const_demi_masque(NumeroMasque num)
             break;
         case M_3_4 :
             demi_m.nom = "M_3_4";
+            demi_m.taille = 4;
+            demi_m.pond = (Ponderation*)malloc(demi_m.taille*sizeof(Ponderation));
             ponder.poids = 3;
             ponder.p_x = 1;
             ponder.p_y = 0;
@@ -115,6 +124,8 @@ DemiMasque const_demi_masque(NumeroMasque num)
             break;
         case M_5_7_11 :
             demi_m.nom = "M_5_7_11";
+            demi_m.taille = 8;
+            demi_m.pond = (Ponderation*)malloc(demi_m.taille*sizeof(Ponderation));
             ponder.poids = 5;
             ponder.p_x = 1;
             ponder.p_y = 0;
@@ -203,10 +214,12 @@ void calculer_Rosenfeld_DT (cv::Mat img_niv, DemiMasque demi_m)
     for (int y = 0; y < img_niv.rows; y++)
     for (int x = 0; x < img_niv.cols; x++)
     {
+        //std::cout << 1;
         if(img_niv.at<int>(y,x) != 0)
         {
+            //std::cout << std::endl;
             min = img_niv.at<int>(y,x);
-            for (int i = 0 ; i< demi_m.taille ; i++)
+            for (int i = 0 ; i < demi_m.taille ; i++)
             {
                 if(y-demi_m.pond[i].p_y >= 0 && x-demi_m.pond[i].p_x >= 0)
                 {
@@ -215,20 +228,23 @@ void calculer_Rosenfeld_DT (cv::Mat img_niv, DemiMasque demi_m)
                         min = img_niv.at<int>(y-demi_m.pond[i].p_y, x-demi_m.pond[i].p_x) + demi_m.pond[i].poids;
                     }
                 }
+                //std::cout << 2 << std::endl;
             }
             img_niv.at<int>(y,x) = min;
         }
         
     }//balayge avant
     min = 0;
-    
+    std::cout << demi_m.taille << std::endl;
     for (int y = img_niv.rows-1; y >=0 ; y--)
-    for (int x = img_niv.cols; x >=0 ; x--)
+    for (int x = img_niv.cols-1; x >=0 ; x--)
     {
+        //std::cout << 3;
         if(img_niv.at<int>(y,x) != 0)
         {
+            
             min = img_niv.at<int>(y,x);
-            for (int i = 0 ; i< demi_m.taille ; i++)
+            for (int i = 0 ; i < demi_m.taille ; i++)
             {
                 if(y+demi_m.pond[i].p_y < img_niv.rows && x+demi_m.pond[i].p_x < img_niv.cols)
                 {
@@ -237,6 +253,7 @@ void calculer_Rosenfeld_DT (cv::Mat img_niv, DemiMasque demi_m)
                         min = img_niv.at<int>(y+demi_m.pond[i].p_y, x+demi_m.pond[i].p_x) + demi_m.pond[i].poids;
                     }
                 }
+                //std::cout << 5 << std::endl;
             }
             img_niv.at<int>(y,x) = min;
         }
@@ -245,7 +262,7 @@ void calculer_Rosenfeld_DT (cv::Mat img_niv, DemiMasque demi_m)
 }
 
 
-void detecter_maximums_locaux (cv::Mat img_niv, DemiMasque demi_masque)
+void/*cv::Mat*/ detecter_maximums_locaux (cv::Mat img_niv, DemiMasque demi_masque)
 {
     CHECK_MAT_TYPE(img_niv, CV_32SC1)
 
@@ -253,39 +270,100 @@ void detecter_maximums_locaux (cv::Mat img_niv, DemiMasque demi_masque)
     masque.nom = demi_masque.nom;
     masque.num_masque = demi_masque.num_masque;
     masque.taille = demi_masque.taille * 2;
+    masque.pond = (Ponderation*)malloc(masque.taille*sizeof(Ponderation));
     for (int i = 0 ; i < demi_masque.taille ; i++)
     {
         masque.pond[i] = demi_masque.pond[i];
         demi_masque.pond[i].p_x = -demi_masque.pond[i].p_x;//calcul du demi masque inverse
         demi_masque.pond[i].p_y = -demi_masque.pond[i].p_y;
+
     }
+    std::cout << demi_masque.taille << std::endl;
     for (int i = 0 ; i < demi_masque.taille ; i++)
     {
         masque.pond[i + demi_masque.taille] = demi_masque.pond[i];
+        std::cout << masque.pond[i + demi_masque.taille].p_x << std::endl;
     }
+    //std::cout << masque.pond[0].p_x << std::endl;
+    std::cout << masque.pond[0].p_x <<';'<< masque.pond[1].p_x <<';'<< masque.pond[2].p_x <<';'<< masque.pond[3].p_x <<';' << masque.pond[4].p_x << ';'<< masque.pond[5].p_x <<';'<< masque.pond[6].p_x <<';'<< masque.pond[7].p_x << std::endl;
+    std::cout << masque.pond[0].p_y << masque.pond[1].p_y << masque.pond[2].p_y << masque.pond[3].p_y << masque.pond[4].p_y << masque.pond[5].p_y << masque.pond[6].p_y << masque.pond[7].p_y << std::endl;
 
-    cv::Mat img_dt;
-    img_dt = img_niv;
+    //cv::Mat img_dt;
+    //img_dt = img_niv;
 
-    for (int y = 0; y < img_dt.rows; y++)
-    for (int x = 0; x < img_dt.cols; x++)
+
+
+    for (int y = 0; y < img_niv.rows; y++)
+    for (int x = 0; x < img_niv.cols; x++)
     {
         for (int i = 0 ; i < masque.taille ; i++)
         {
-            if(y + masque.pond[i].p_y >= 0 && y + masque.pond[i].p_y < img_dt.rows && x + masque.pond[i].p_x >= 0 && x + masque.pond[i].p_x < img_dt.cols)
+            if(y + masque.pond[i].p_y >= 0 && y + masque.pond[i].p_y < img_niv.rows && x + masque.pond[i].p_x >= 0 && x + masque.pond[i].p_x < img_niv.cols)
             {
-                if (img_dt.at<int>(y,x) <= img_dt.at<int>(y + masque.pond[i].p_y, x + masque.pond[i].p_x) - masque.pond[i].poids)
+                //std::cout << "Etape 1" << std::endl;
+                if (img_niv.at<int>(y,x) <= img_niv.at<int>(y + masque.pond[i].p_y, x + masque.pond[i].p_x) - masque.pond[i].poids)
                 {
-                    img_dt.at<int>(y,x) = 0;
+                    img_niv.at<int>(y,x) = 0;
+                    //std::cout << "il va break Etape 2" << std::endl;
                     break;
                 }
             }
         }
     }
-
+    free(masque.pond);
+    //img_niv = img_dt;
+    //return img_dt;
 }
 
+void calculer_Rosenfeld_RDT(cv::Mat img_dt, DemiMasque demi_m)
+{
+    CHECK_MAT_TYPE(img_dt, CV_32SC1)
 
+    int max = 0;
+    for (int y = 0; y < img_dt.rows; y++)
+    for (int x = 0; x < img_dt.cols; x++)
+    {
+        max = img_dt.at<int>(y,x);
+        for (int i = 0 ; i < demi_m.taille ; i ++)
+        {
+
+            if(y-demi_m.pond[i].p_y >= 0 && x-demi_m.pond[i].p_x >= 0)
+            {
+                if(max < img_dt.at<int>(y-demi_m.pond[i].p_y, x-demi_m.pond[i].p_x) - demi_m.pond[i].poids)
+                {
+                    max = img_dt.at<int>(y-demi_m.pond[i].p_y, x-demi_m.pond[i].p_x) - demi_m.pond[i].poids;
+                }
+                //std::cout<< max << std::endl;
+            }
+        
+        }
+    }//balayage avant
+
+
+
+    for (int y = img_dt.rows-1; y >=0 ; y--)
+    for (int x = img_dt.cols-1; x >=0 ; x--)
+    {
+
+        max= img_dt.at<int>(y,x);
+
+        for (int i = 0 ; i< demi_m.taille ; i++)
+        {
+            if(y+demi_m.pond[i].p_y < img_dt.rows && x+demi_m.pond[i].p_x < img_dt.cols)
+            {
+                if(max < img_dt.at<int>(y+demi_m.pond[i].p_y, x+demi_m.pond[i].p_x) + demi_m.pond[i].poids)
+                {
+                    max = img_dt.at<int>(y+demi_m.pond[i].p_y, x+demi_m.pond[i].p_x) + demi_m.pond[i].poids;
+                    //std::cout<< max << std::endl;
+                    std::cout<< i << std::endl;
+                }
+            }
+            
+        }
+        img_dt.at<int>(y,x) = max;
+
+    }//balayage arrière
+}
 
 
 
@@ -353,17 +431,22 @@ void transformer_bandes_diagonales (cv::Mat img_niv)
 
 
 // Appelez ici vos transformations selon affi
-void effectuer_transformations (My::Affi affi, cv::Mat img_niv)
+void effectuer_transformations (My::Affi affi, cv::Mat img_niv, int num)
 {
+    DemiMasque demi_m;
+    demi_m = const_demi_masque(num);
     switch (affi) {
         case My::A_TRANS1 :
-            transformer_bandes_horizontales (img_niv);
+            calculer_Rosenfeld_DT (img_niv, demi_m);
             break;
         case My::A_TRANS2 :
-            transformer_bandes_verticales (img_niv);
+            calculer_Rosenfeld_DT (img_niv, demi_m);
+            detecter_maximums_locaux (img_niv, demi_m);
             break;
         case My::A_TRANS3 :
-            transformer_bandes_diagonales (img_niv);
+            calculer_Rosenfeld_DT (img_niv, demi_m);
+            detecter_maximums_locaux (img_niv, demi_m);
+            calculer_Rosenfeld_RDT (img_niv, demi_m);
             break;
         default : ;
     }
@@ -433,12 +516,13 @@ void afficher_aide() {
         "Touches du clavier:\n"
         "   a    affiche cette aide\n"
         " hHlL   change la taille de la loupe\n"
+        "   d    affiche le nom du masque et change de masque\n"
         "   i    inverse les couleurs de src\n"
         "   o    affiche l'image src originale\n"
         "   s    affiche l'image src seuillée\n"
-        "   1    affiche la transformation 1\n"
-        "   2    affiche la transformation 2\n"
-        "   3    affiche la transformation 3\n"
+        "   1    Rosenfeld DT\n"
+        "   2    Detecter maximum locaux\n"
+        "   3    Rosenfeld RDT\n"
         "  esc   quitte\n"
     << std::endl;
 }
@@ -475,6 +559,7 @@ int onKeyPressEvent (int key, void *data)
             inverser_couleurs(my->img_src);
             my->set_recalc(My::R_SEUIL);
             break;
+
         case 'o' :
             std::cout << "Image originale" << std::endl;
             my->affi = My::A_ORIG;
@@ -491,23 +576,23 @@ int onKeyPressEvent (int key, void *data)
         //   My::R_SEUIL pour faire le calcul à partir de l'image originale seuillée
         //   My::R_TRANSFOS pour faire le calcul à partir de l'image actuelle
         case '1' :
-            std::cout << "Transformation 1" << std::endl;
+            std::cout << "Rosenfeld DT" << std::endl;
             my->affi = My::A_TRANS1;
             my->set_recalc(My::R_SEUIL);
             break;
         case '2' :
-            std::cout << "Transformation 2" << std::endl;
+            std::cout << "Detecter maximum locaux" << std::endl;
             my->affi = My::A_TRANS2;
             my->set_recalc(My::R_SEUIL);
             break;
         case '3' :
-            std::cout << "Transformation 3" << std::endl;
+            std::cout << "Rosenfeld RDT" << std::endl;
             my->affi = My::A_TRANS3;
             my->set_recalc(My::R_SEUIL);
             break;
 
         case 'd' :
-            //std::cout << demi_m.nom << std::endl;
+            std::cout << my->demi_m.nom << std::endl;
             my->set_recalc(My::R_SEUIL);
             break;
 
@@ -532,7 +617,6 @@ int main (int argc, char**argv)
     My my;
     char *nom_in1, *nom_out2, *nom_prog = argv[0];
     int zoom_w = 600, zoom_h = 500;
-
     while (argc-1 > 0) {
         if (!strcmp(argv[1], "-mag")) {
             if (argc-1 < 3) { afficher_usage(nom_prog); return 1; }
@@ -592,7 +676,7 @@ int main (int argc, char**argv)
         {
             // std::cout << "Calcul transfos" << std::endl;
             if (my.affi != My::A_ORIG) {
-                effectuer_transformations (my.affi, my.img_niv);
+                effectuer_transformations (my.affi, my.img_niv, my.num);
                 representer_en_couleurs_vga (my.img_niv, my.img_coul);
             } else my.img_coul = my.img_src.clone();
         }
