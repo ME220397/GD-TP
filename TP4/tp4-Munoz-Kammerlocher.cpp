@@ -819,7 +819,22 @@ ContoursF8 effectuer_suivi_contours_c8(cv::Mat img_niv)//Permet d'editer le cont
 
 //----------------------------------------------TP2---------------------------------------------------//
 
-void remplir_polyg(PointContour pc[], cv::Mat img_niv, cv::Scalar col){
+void remplir_polyg(PointContour pc[], cv::Mat img_niv, cv::Scalar col, int n){
+    int n_flags = 0; 
+    for (int i=0; i<n; i++){
+       if(pc[i].flag == 1){
+            n_flags++;
+       }
+    }
+    cv::Point points[0][n];
+    int cpt = 0;
+    for (int i=0; i<n; i++){
+        points[0][cpt++] = cv::Point(pc[i].y, pc[i].x);
+    }
+    printf("OK\n");
+    const cv::Point* ppt[1] = {points[0]};
+    int npt[] = {n};
+    cv::fillPoly(img_niv, ppt, npt, 1, col, 8);
 }
 
 // Appelez ici vos transformations selon affi
@@ -832,7 +847,7 @@ void effectuer_transformations (My::Affi affi, cv::Mat img_niv)
             //marquer_contour_c8 (img_niv);
             contours_f8 = effectuer_suivi_contours_c8(img_niv);
             pc = approximer_contour_c8(contours_f8.f8[0].chaine_free, contours_f8.f8[0].taille, contours_f8.f8[0].p_y, contours_f8.f8[0].p_x, seuil_dist);
-            remplir_polyg(pc, img_niv, cv::Scalar(255, 0, 0));
+            remplir_polyg(pc, img_niv, cv::Scalar(0, 0, 0), contours_f8.f8[0].taille+1);
             break;
         case My::A_TRANS2 :
             marquer_contour_c4 (img_niv);
